@@ -12,7 +12,7 @@ object Formlets5 {
   import Applicative._
   import Pointed._
 
-
+  type Errors = Map[String,String]
   type Env = Map[String, String] // worry about files later
   type ValidForm[A] = Validation[NonEmptyList[(String,String)],A]
 
@@ -20,7 +20,7 @@ object Formlets5 {
    * A view represents a visual representation of a form. It is a
    * function which takes a list of all errors and then produces a new view
    */
-  type View = Map[String,String] => NodeSeq
+  type View = Errors => NodeSeq
 
   trait Form[A] extends NewType[ Env => State[Int,(ValidForm[A],View)] ]
   object Form {
@@ -79,14 +79,24 @@ object Formlets5 {
 	      nel((lookupName, "could not lookup for " + name),List()))
 	  val view =
 	    (errors: Map[String,String]) => 
-	      <input type="text" name={ lookupName } id={ lookupName } value={ env.get(lookupName).toString } class="digestive-input" />
+	      <input type="text" name={ lookupName } id={ lookupName } value={ errors.get(lookupName).toString } class="digestive-input" />
 	  (valid,view)
 	})
 
-/*
-  def runFormState[A](frm: Form[A], env: Env) = 
-    (frm ! 0)(env)
-*/	 	 
+
+  def runFormState[A](frm: Form[A], env: Env, showErrors: Boolean = true) = {
+    val (valid,view) = (frm.value(env)) ! 0
+    val errors: Errors = valid match {
+      case Success(_) => Map()
+      case Failure(x) => if (showErrors) x.list.toMap else Map()
+    }
+    (valid, view(errors))
+  }
+
+  def getFormView[A](frm: Form[A]) =
+    runFormState(frm, Map(), false)._2
+  
+	 	 
 }
 
 object Formlets5Test {
@@ -97,9 +107,14 @@ object Formlets5Test {
   val myForm = (input("first") ⊛ input("last")){FullName2(_,_)}
 
   def main(args: Array[String]) = {
+    /*
     println((myForm.value)(Map()) ! 0)
     println((myForm.value)(Map("first1"->"Jim")) ! 0)
     println((myForm.value)(Map("first1"->"Jim", "last2" -> "Bob")) ! 0)
+    */
+    println(runFormState(myForm, Map("first1"->"Jim")))
+    println(runFormState(myForm, Map("first1"->"Jim", "last2" -> "Bob")))
+    println(getFormView(myForm))	    
   }
 
 }

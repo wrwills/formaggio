@@ -1,7 +1,8 @@
 import scalaz._
 
 /**
- * trying again with state
+ * putting the state monad on the outside
+ * 
  */
 
 object Formlets6 {

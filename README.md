@@ -26,6 +26,7 @@ in which this package can be improved:
  * look at using ReaderT for the environment
  * handle file uploads
  * make this work easily with common Scala web frameworks such as Lift and Scalatra
+ * support for different backends eg scalate
  
  
  
