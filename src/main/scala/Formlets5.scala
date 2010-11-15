@@ -22,9 +22,6 @@ object Formlets5 {
    */
   type View = Map[String,String] => NodeSeq
 
-  //case class FormInternal[A](
-    
-
   trait Form[A] extends NewType[ Env => State[Int,(ValidForm[A],View)] ]
   object Form {
     def apply[A](fn: Env => State[Int,(ValidForm[A],View)]) = 
@@ -38,20 +35,7 @@ object Formlets5 {
 	yield (success(a), (errors: Map[String,String]) => Text("")))
   }
 
-  /*
-   implicit def FormFunctor: Functor[Form] = new Functor[Form] {
-    def fmap[A, B](r: Form[A], f: A => B): Form[B] = 
-      Form((env: Env) => 
-	for {s <- init[Int];
-	     _ <- modify((_: Int) + 1);
-	     rslt <-r.value(env) 
-	   } yield rslt  match {
-	     case (Success(a),view) => (success[NonEmptyList[(String,String)],B](f(a)),view)
-	     case (Failure(e),view) => (failure[NonEmptyList[(String,String)],B](e),view)
-	   })
-   }	   
-   */
-   implicit def FormFunctor: Functor[Form] = new Functor[Form] {
+  implicit def FormFunctor: Functor[Form] = new Functor[Form] {
     def fmap[A, B](r: Form[A], f: A => B): Form[B] = 
       Form((env: Env) => 
 	for {s <- init[Int];
@@ -68,7 +52,6 @@ object Formlets5 {
       Form(
 	(env: Env) =>
 	for {s <- init[Int];
-	     _ <- modify((_: Int) + 1);
 	     frslt <- f.value(env); 
 	     arslt <- a.value(env)
 	   } yield {
@@ -86,7 +69,9 @@ object Formlets5 {
  def input(name: String): Form[String] =
    Form(
      (env: Env) =>  
-       	for {s <- init[Int] } yield {
+       	for {s <- init[Int] 
+	     _ <- modify((_: Int) + 1)
+	   } yield {
 	  val lookupName = name + s
 	  println("lookupName " + lookupName)
 	  val valid =
@@ -111,13 +96,11 @@ object Formlets5Test {
   case class FullName2(first: String, second: String)
   val myForm = (input("first") ⊛ input("last")){FullName2(_,_)}
 
-  /*
   def main(args: Array[String]) = {
-    println(myForm.fn(Map("first"->"Jim")))
-    println(myForm.view(Map("first"->"Jim")))
-    println(myForm.fn(Map("first"->"Jim", "last" -> "Bob")))
-    println(myForm.view(Map("first"->"Jim", "last" -> "Bob")))
-  }*/
+    println((myForm.value)(Map()) ! 0)
+    println((myForm.value)(Map("first1"->"Jim")) ! 0)
+    println((myForm.value)(Map("first1"->"Jim", "last2" -> "Bob")) ! 0)
+  }
 
 }
 
