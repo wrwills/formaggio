@@ -72,6 +72,7 @@ object Formlets5 {
 	     frslt <- f.value(env); 
 	     arslt <- a.value(env)
 	   } yield {
+	     println("applying: state is " + s)
 	     val valid = (frslt._1,arslt._1)  match {
 	       case (Success(x),Success(y)) => success(x(y))
 	       case (Success(x),Failure(y)) => failure(y)

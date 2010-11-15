@@ -74,24 +74,41 @@ object Formlets6 {
 	     })
   }
 
-//      error("undefined")
-/*
- * 	     (env: Env) => (failure(NonEmptyList(("aa","bb"))),(errors: Errors) => Text(""))
- *       Form(
-	for {s <- init[Int];
-	     _ <- modify((_: Int) + 1);
-	     rslt <-r.value
-	   } yield
-	     (env: Env) =>
-	       (failure(NonEmptyList(("aa","bb"))),(errors: Errors) => Text(""))
-      }
+  def input(name: String): Form[String] =
+    Form(
+      for {s <- init[Int] } yield
+	(env: Env) => {
+	  val lookupName = name + s 
+	  val valid =
+            env.get(lookupName).toSuccess[NonEmptyList[(String,String)]](
+	      nel((lookupName, "could not lookup for " + name),List()))
+	  val view =
+	    (errors: Map[String,String]) => 
+	      <input type="text" name={ lookupName } id={ lookupName } value={ env.get(lookupName).toString } class="digestive-input" />
+	  (valid,view)
+	})
 
-	  ((env: Env) =>
-	    s.value(env) match {
-	      case (Success(a),view) => (success(f(a)),view)
-		  case (Failure(e),view) => (failure(e),view)
-	    })
-  */ 
-
+  /*
+  implicit def FormIndex: Index[Form] = new Index[Form] {
+    def index[A](a: Form[A], i: Int) = None
+  }*/
 
 }
+
+object Formlets6Test {
+  import Scalaz._
+  import Formlets6._
+
+  case class FullName2(first: String, second: String)
+  val myForm = (input("first") ⊛ input("last")){FullName2(_,_)}
+myForm.value ! 0
+  /*
+  def main(args: Array[String]) = {
+    println(myForm.fn(Map("first"->"Jim")))
+    println(myForm.view(Map("first"->"Jim")))
+    println(myForm.fn(Map("first"->"Jim", "last" -> "Bob")))
+    println(myForm.view(Map("first"->"Jim", "last" -> "Bob")))
+  }*/
+
+}
+
