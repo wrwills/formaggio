@@ -57,8 +57,7 @@ object Formlets6 {
   implicit def FormApply: Apply[Form] = new Apply[Form] {
     def apply[A,B](f: => Form[A => B], a: => Form[A]): Form[B] = 
       Form(
-	for {s <- init[Int];
-	     _ <- modify((_: Int) + 1);
+	for {s <- init[Int]
 	     fform <- f.value
 	     aform <- a.value
 	   } yield  
@@ -76,8 +75,9 @@ object Formlets6 {
 
   def input(name: String): Form[String] =
     Form(
-      for {s <- init[Int] } yield
-	(env: Env) => {
+      for {s <- init[Int];
+	   _ <- modify((_: Int) + 1)
+	 } yield (env: Env) => {
 	  val lookupName = name + s 
 	  val valid =
             env.get(lookupName).toSuccess[NonEmptyList[(String,String)]](
@@ -101,14 +101,13 @@ object Formlets6Test {
 
   case class FullName2(first: String, second: String)
   val myForm = (input("first") ⊛ input("last")){FullName2(_,_)}
-myForm.value ! 0
-  /*
+  
   def main(args: Array[String]) = {
-    println(myForm.fn(Map("first"->"Jim")))
-    println(myForm.view(Map("first"->"Jim")))
-    println(myForm.fn(Map("first"->"Jim", "last" -> "Bob")))
-    println(myForm.view(Map("first"->"Jim", "last" -> "Bob")))
-  }*/
+    println((myForm.value ! 0)(Map()))
+    println(((myForm.value ! 0)(Map())._2)(Map())  )
+    println((myForm.value ! 0)(Map("first1"->"Jim")))
+    println((myForm.value ! 0)(Map("first1"->"Jim", "last2" -> "Bob")))
+  }
 
 }
 

@@ -87,7 +87,8 @@ object Formlets5 {
    Form(
      (env: Env) =>  
        	for {s <- init[Int] } yield {
-	  val lookupName = name + s	  
+	  val lookupName = name + s
+	  println("lookupName " + lookupName)
 	  val valid =
             env.get(lookupName).toSuccess[NonEmptyList[(String,String)]](
 	      nel((lookupName, "could not lookup for " + name),List()))
