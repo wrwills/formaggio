@@ -7,15 +7,18 @@ forms that are type-safe, handle errors, abstract and are easy to combine into
 bigger forms." The key feature of formlets is that they are composable: formlets
 can be combined to produce larger forms using applicative functors.
 
-I started writing this because I was impressed by the Haskell implementations
-of the idea: [Formlets](http://hackage.haskell.org/package/formlets) and 
+I started writing this because I thought the idea Formlets was very clever, and I 
+was impressed by the Haskell implementations: [Formlets](http://hackage.haskell.org/package/formlets) and 
 [Digestive-Functors](http://hackage.haskell.org/package/digestive-functors).  
 I also thought it would be a
-good way to get to know Scalaz which is pretty much essential when trying 
-to port ideas from Haskell to Scala.   
+good way to get to grips with Scalaz which is pretty much essential when trying 
+to port ideas from Haskell to Scala.  I generally tried to follow the Haskell implementations, 
+especially digestive-functors, but it was necessary to diverge a little in order to 
+reuse scalaz' Validators.
 
 Other implementations:
-
+ * F#: the (commercial) [WebSharper Platform](http://www.intellifactory.com/products/wsp/Home.aspx)
+   contains a [formlets library](http://www.intellifactory.com/docs/formlets/index.html).
  * Racket: http://docs.racket-lang.org/web-server/formlets.html
  * Common Lisp: http://www.cliki.net/admin/edit/edit/Formlets
 

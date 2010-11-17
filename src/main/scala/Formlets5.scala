@@ -76,7 +76,7 @@ object Formlets5 {
     def fmap[A, B](r: Form[A], f: A => B): Form[B] = 
       Form((env: Env) => 
 	for {s <- init[Int];
-	     _ <- modify((_: Int) + 1);
+//	     _ <- modify((_: Int) + 1);
 	     rslt <-r.value(env) 
 	   } yield rslt  match {
 	     case (Success(a),view) => (success(f(a)),view)
@@ -120,6 +120,20 @@ object Formlets5 {
 	  (valid,view)
 	})
 
+  // need to modify state monad to be (String,Int) for this to work
+  def label(name: String): Form[Unit] = 
+   Form(
+     (env: Env) =>  
+       for {s <- init[Int]} yield 
+	 {
+	     val lab = 
+	       (errors: Map[String,String]) => <label for={ "name" + s } class="digestive-label">{ name }</label>
+	     ( success(()),  lab )
+	 }
+   )
+
+
+    
 
   /*
  def inputN(name: String): Form[Name] =
@@ -219,6 +233,11 @@ object Formlets5Test {
     val fullNameForm = (myNameForm  ⊛ myNameForm){  FullName(_,_) }
   //val myFormTwo = (myNameForm ⊛ myNameForm){ FullName(_,_) }
 
+  // 
+  //val labelledFullNameForm = (label("First") ⊛ myNameForm ⊛ label("Second") ⊛ myNameForm){  FullName(_,_) }
+  def labelledNameForm(s: String) =  validate(label(s) *> (input("name") ∘ Name.apply))
+  val labelledFullNameForm = (labelledNameForm("First")  ⊛ labelledNameForm("Second")){ FullName(_,_) }
+
   def main(args: Array[String]) = {
     /*
     println((myForm.value)(Map()) ! 0)
@@ -230,6 +249,8 @@ object Formlets5Test {
     println(getFormView(myForm))	    
 
     println(runFormState( fullNameForm, Map("name2"-> "Jim", "name4" -> "Bob")))
+
+    println(runFormState( labelledFullNameForm, Map("name0"-> "Jim", "name1" -> "Bob")))
   }
 
 }
