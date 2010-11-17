@@ -1,3 +1,5 @@
+package scormlets
+
 import scalaz._
 
 /**
@@ -7,6 +9,8 @@ import scalaz._
 object Formlets5 {
 
   import Scalaz._
+  import FromString._
+
   import scala.xml.NodeSeq
   import scala.xml.Text
   import Applicative._
@@ -22,11 +26,44 @@ object Formlets5 {
    */
   type View = Errors => NodeSeq
 
-  trait Form[A] extends NewType[ Env => State[Int,(ValidForm[A],View)] ]
+  trait Form[A] extends NewType[ Env => State[Int,(ValidForm[A],View)] ] {
+
+    /*
+     * Append a unit form to the left. This is useful for adding labels or error
+     * fields
+     * only works if current form returns Unit
+     */
+    def ++>[B](frm: Form[B]): Form[B] = 
+      Form((env: Env) => 
+	for {s <- init[Int]
+	     arslt <- this.value(env)
+	     frslt <- frm.value(env)
+	   } yield 
+	     (frslt._1, arslt._2 ⊹ frslt._2))
+
+    /*
+     * Append a unit form to the right. See '++>'.
+     */
+    //def <++(frm: Form[Unit]): Form[A] = 
+//   // <++ :: (Monad m, Monoid v)
+
+  }
   object Form {
     def apply[A](fn: Env => State[Int,(ValidForm[A],View)]) = 
       new Form[A]{ val value = fn }
   }
+
+  /*
+  def liftValidationToForm[String => A](v: String => Validation[String,A]): Form[String => A] = {
+    val newf = (s:String) => v(s) match {
+      case Success(s) => success[NonEmptyList[(String,String)],A](s)
+      case Failure(e) => failure[NonEmptyList[(String,String)],A](NonEmptyList("",e))
+    }
+    Form((env: Env) => 
+      for {s <- init[Int]} 
+      yield (v(
+      */
+
 
   implicit def FormPure: Pure[Form] = new Pure[Form] {
     def pure[A](a: => A) =
@@ -84,6 +121,49 @@ object Formlets5 {
 	})
 
 
+  /*
+ def inputN(name: String): Form[Name] =
+   Form(
+     (env: Env) =>  
+       	for {s <- init[Int] 
+	     _ <- modify((_: Int) + 1)
+	   } yield {
+	  val lookupName = name + s
+	  println("lookupName " + lookupName)
+	  val valid: Validation[String,Name] =
+	    for (a <- env.get(lookupName).toSuccess[String]("could not lookup for " + lookupName);
+		 b <- Name(a)) yield b
+	  val view =
+	    (errors: Map[String,String]) => 
+	      <input type="text" name={ lookupName } id={ lookupName } value={ errors.get(lookupName).toString } class="digestive-input" />
+	  (valid ,view)
+	})*/
+
+
+  /*
+ def inputText[A](name: String = "")(implicit f: FromString[A]): Form[A] =
+   Form(
+     (env: Env) =>  
+       	for {s <- init[Int] 
+	     _ <- modify((_: Int) + 1)
+	   } yield {
+	     val lookupName = name + s
+	     println("lookupName " + lookupName)
+	     val valid =
+               env.get(lookupName).toSuccess[NonEmptyList[(String,String)]](
+		 nel((lookupName, "could not lookup for " + name),List())).fromString
+	     val view =
+	       (errors: Map[String,String]) => 
+		 <input type="text" name={ lookupName } id={ lookupName } value={ errors.get(lookupName).toString } class="digestive-input" />
+	     (valid,view)
+	   }
+   )
+   */
+
+  //def inputAndLabel(name: String): Form[String] =
+    
+
+
   def runFormState[A](frm: Form[A], env: Env, showErrors: Boolean = true) = {
     val (valid,view) = (frm.value(env)) ! 0
     val errors: Errors = valid match {
@@ -96,6 +176,24 @@ object Formlets5 {
   def getFormView[A](frm: Form[A]) =
     runFormState(frm, Map(), false)._2
   
+
+  def validate[A](form: Form[Validation[String,A]]): Form[A] = 
+    Form(
+      (env: Env) =>
+	for {
+	  s <- init[Int];
+	  frslt <- form.value(env) 
+	} yield {
+	  val valid = frslt._1 match {
+	    case Success(x) => x match {
+	      case Success(xx) => success[NonEmptyList[(String,String)],A](xx)
+	      case Failure(xy) => failure[NonEmptyList[(String,String)],A](NonEmptyList( ("",xy) ))
+	    }
+	    case Failure(y) => failure[NonEmptyList[(String,String)],A](y)
+	  }
+	  (valid, frslt._2)
+	}
+    )
 	 	 
 }
 
@@ -103,8 +201,23 @@ object Formlets5Test {
   import Scalaz._
   import Formlets5._
 
+  case class FullName(first: Name, second: Name)
   case class FullName2(first: String, second: String)
   val myForm = (input("first") ⊛ input("last")){FullName2(_,_)}
+
+  sealed trait Name extends NewType[String]
+  object Name {
+    def apply(s: String): Validation[String, Name] = 
+      if (s.headOption.exists(_.isUpper))
+	(new Name {val value = s}).success
+      else
+	"Name must start with a capital letter".fail
+  }
+
+  //val myNameForm: Form[Validation[String,Name]] = input("name") ∘ Name.apply 
+  val myNameForm: Form[Name] = validate(input("name") ∘ Name.apply )
+    val fullNameForm = (myNameForm  ⊛ myNameForm){  FullName(_,_) }
+  //val myFormTwo = (myNameForm ⊛ myNameForm){ FullName(_,_) }
 
   def main(args: Array[String]) = {
     /*
@@ -115,6 +228,8 @@ object Formlets5Test {
     println(runFormState(myForm, Map("first1"->"Jim")))
     println(runFormState(myForm, Map("first1"->"Jim", "last2" -> "Bob")))
     println(getFormView(myForm))	    
+
+    println(runFormState( fullNameForm, Map("name2"-> "Jim", "name4" -> "Bob")))
   }
 
 }

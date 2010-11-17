@@ -52,7 +52,7 @@ object Formlets4 {
     def apply[A,B](f: => Form[A => B], a: => Form[A]): Form[B] = 
       Form(
 	(env: Env) => (f.fn(env),a.fn(env)) match {
-	  case (Success(x),Success(y)) => success(x(y))
+ 	  case (Success(x),Success(y)) => success(x(y))
 	  case (Success(x),Failure(y)) => failure[NonEmptyList[String],B](y)
 	  case (Failure(x),Success(y)) => failure[NonEmptyList[String],B](x)
 	  case (Failure(x),Failure(y)) => failure[NonEmptyList[String],B](x ⊹ y)
