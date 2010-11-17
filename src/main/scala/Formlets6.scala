@@ -95,7 +95,7 @@ object Formlets6 {
   }*/
 
 }
-
+/*
 object Formlets6Test {
   import Scalaz._
   import Formlets6._
@@ -111,4 +111,4 @@ object Formlets6Test {
   }
 
 }
-
+*/
