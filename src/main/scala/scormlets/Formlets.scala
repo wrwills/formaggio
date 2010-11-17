@@ -109,16 +109,16 @@ object Formlets5 {
        	for {s <- init[Int] 
 	     _ <- modify((_: Int) + 1)
 	   } yield {
-	  val lookupName = name + s
-	  println("lookupName " + lookupName)
-	  val valid =
-            env.get(lookupName).toSuccess[NonEmptyList[(String,String)]](
-	      nel((lookupName, "could not lookup for " + name),List()))
-	  val view =
-	    (errors: Map[String,String]) => 
-	      <input type="text" name={ lookupName } id={ lookupName } value={ errors.get(lookupName).toString } class="digestive-input" />
-	  (valid,view)
-	})
+	     val lookupName = name + s
+	     val lookup = env.get(name + s)
+	     val valid =
+               lookup.toSuccess[NonEmptyList[(String,String)]](
+		 nel((lookupName, "could not lookup for " + name),List()))
+	     val view =
+	       (errors: Map[String,String]) => 
+		 <input type="text" name={ lookupName } id={ lookupName } value={ lookup.getOrElse("") } class="digestive-input" />
+	     (valid,view)
+	   })
 
   // need to modify state monad to be (String,Int) for this to work
   def label(name: String): Form[Unit] = 
