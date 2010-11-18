@@ -59,6 +59,18 @@ class FormletsSpecs extends Specification {
     rslt._1.fail.toOption.get.head must_==  ("name1","could not lookup for name")
   }
 
+  "form should fail if one of the values isn't filled in correctly" in {
+    val rslt = runFormState(labelledFullNameForm, Map("name0"-> "Jim", "name1" -> "bob"))
+    rslt._1.isFailure must beTrue
+    //rslt._1.fail.toOption.get.head must_==  ("","Name must start with a capital letter")
+    // TODO: make index for validation failures
+    rslt._1.fail.toOption.get.head must_==  ("","Name must start with a capital letter")
+
+    val view = rslt._2
+    getValueForInput("name0", view) must_== "Jim"
+    getValueForInput("name1", view) must_== "bob"
+  }
+
   
 
 }
