@@ -20,63 +20,63 @@ object Formlets {
   type Env = Map[String, String] // worry about files later
   type ValidForm[A] = Validation[NonEmptyList[(String,String)],A]
 
+  // form state is an integer showing the number of the last input together 
+  type FormState = (Int,List[String])
+
   /*
    * A view represents a visual representation of a form. It is a
    * function which takes a list of all errors and then produces a new view
    */
   type View = Errors => NodeSeq
 
-  trait Form[A] extends NewType[ Env => State[Int,(ValidForm[A],View)] ] {
+  trait Form[A] extends NewType[ Env => State[FormState,(ValidForm[A],View)] ] {
 
     /*
      * Append a unit form to the left. This is useful for adding labels or error
      * fields
      * only works if current form returns Unit
-     */
+     */    
     def ++>[B](frm: Form[B]): Form[B] = 
       Form((env: Env) => 
-	for {s <- init[Int]
+	for {s <- init[FormState]
+	     arslt <- this.value(env)
+	     frslt <- frm.value(env)
+	   } yield
+	     (frslt._1, arslt._2 ⊹ frslt._2))
+	 
+  }
+    /*
+     * Append a unit form to the right. See '++>'.
+     */
+    /*
+    def <++(frm: Form[Unit]): Form[A] = 
+      Form((env: Env) => 
+	for {s <- init[FormState]
 	     arslt <- this.value(env)
 	     frslt <- frm.value(env)
 	   } yield 
 	     (frslt._1, arslt._2 ⊹ frslt._2))
-
-    /*
-     * Append a unit form to the right. See '++>'.
-     */
-    //def <++(frm: Form[Unit]): Form[A] = 
+      */
 //   // <++ :: (Monad m, Monoid v)
 
-  }
+
+
   object Form {
-    def apply[A](fn: Env => State[Int,(ValidForm[A],View)]) = 
+    def apply[A](fn: Env => State[FormState,(ValidForm[A],View)]) = 
       new Form[A]{ val value = fn }
   }
-
-  /*
-  def liftValidationToForm[String => A](v: String => Validation[String,A]): Form[String => A] = {
-    val newf = (s:String) => v(s) match {
-      case Success(s) => success[NonEmptyList[(String,String)],A](s)
-      case Failure(e) => failure[NonEmptyList[(String,String)],A](NonEmptyList("",e))
-    }
-    Form((env: Env) => 
-      for {s <- init[Int]} 
-      yield (v(
-      */
-
 
   implicit def FormPure: Pure[Form] = new Pure[Form] {
     def pure[A](a: => A) =
       Form((env: Env) => 
-	for {s <- init[Int]} 
+	for {s <- init[FormState]} 
 	yield (success(a), (errors: Map[String,String]) => Text("")))
   }
 
   implicit def FormFunctor: Functor[Form] = new Functor[Form] {
     def fmap[A, B](r: Form[A], f: A => B): Form[B] = 
       Form((env: Env) => 
-	for {s <- init[Int];
-//	     _ <- modify((_: Int) + 1);
+	for {s <- init[FormState];
 	     rslt <-r.value(env) 
 	   } yield rslt  match {
 	     case (Success(a),view) => (success(f(a)),view)
@@ -88,11 +88,13 @@ object Formlets {
     def apply[A,B](f: => Form[A => B], a: => Form[A]): Form[B] = 
       Form(
 	(env: Env) =>
-	for {s <- init[Int];
+	for {s <- init[FormState];
 	     frslt <- f.value(env); 
 	     arslt <- a.value(env)
 	   } yield {
 	     println("applying: state is " + s)
+	     println("arslt: " + arslt)
+	     println("frslt: " + arslt)
 	     val valid = (frslt._1,arslt._1)  match {
 	       case (Success(x),Success(y)) => success(x(y))
 	       case (Success(x),Failure(y)) => failure(y)
@@ -102,12 +104,32 @@ object Formlets {
 	     (valid, frslt._2 ⊹ arslt._2)
 	   })
   }
-	     
-    
 
-
+  /**
+   * convert a form which returns a validation of A into a form with returns A
+   * ie lift the validation of A into the form validation
+   */
+  def validate[A](form: Form[Validation[String,A]]): Form[A] = 
+    Form(
+      (env: Env) =>
+	for {
+	  s <- init[FormState];
+	  frslt <- form.value(env) 
+	} yield {
+	  val valid = frslt._1 match {
+	    case Success(x) => x match {
+	      case Success(xx) => success[NonEmptyList[(String,String)],A](xx)
+	      case Failure(xy) => failure[NonEmptyList[(String,String)],A](NonEmptyList( ("",xy) ))
+	    }
+	    case Failure(y) => failure[NonEmptyList[(String,String)],A](y)
+	  }
+	  (valid, frslt._2)
+	}
+    )
+  
   def runFormState[A](frm: Form[A], env: Env, showErrors: Boolean = true) = {
-    val (valid,view) = (frm.value(env)) ! 0
+    val (valid,view) = (frm.value(env)) ! (0,List[String]())
+    //val (valid,view) = (frm.value(env)) ! 0
     val errors: Errors = valid match {
       case Success(_) => Map()
       case Failure(x) => if (showErrors) x.list.toMap else Map()
@@ -127,26 +149,9 @@ object Formlets {
     }
   }
 
-  def validate[A](form: Form[Validation[String,A]]): Form[A] = 
-    Form(
-      (env: Env) =>
-	for {
-	  s <- init[Int];
-	  frslt <- form.value(env) 
-	} yield {
-	  val valid = frslt._1 match {
-	    case Success(x) => x match {
-	      case Success(xx) => success[NonEmptyList[(String,String)],A](xx)
-	      case Failure(xy) => failure[NonEmptyList[(String,String)],A](NonEmptyList( ("",xy) ))
-	    }
-	    case Failure(y) => failure[NonEmptyList[(String,String)],A](y)
-	  }
-	  (valid, frslt._2)
-	}
-    )
 	 	 
 }
-
+/*
 object Formlets5Test {
   import Scalaz._
   import Formlets._
@@ -190,5 +195,5 @@ object Formlets5Test {
     println(runFormState( labelledFullNameForm, Map("name0"-> "Jim", "name1" -> "Bob")))
   }
 
-}
+}*/
 

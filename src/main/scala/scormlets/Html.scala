@@ -6,15 +6,16 @@ object Html {
   import Scalaz._
   import Formlets._
 
-
   def input(name: String): Form[String] =
     Form(
       (env: Env) =>  
-       	for {s <- init[Int] 
-	     _ <- modify((_: Int) + 1)
+       	for {s <- init[FormState] 
+	     val newInt = s._1 + 1
+	     val lookupName = name + (s._1 + 1)
+	     _ <- modify((x: (FormState)) => (x._1 + 1, lookupName :: x._2))
 	   } yield {
-	     val lookupName = name + s
-	     val lookup = env.get(name + s)
+	     val lookupName = name + s._1
+	     val lookup = env.get(lookupName)
 	     val valid =
                lookup.toSuccess[NonEmptyList[(String,String)]](
 		 nel((lookupName, "could not lookup for " + name),List()))
@@ -28,55 +29,12 @@ object Html {
   def label(name: String): Form[Unit] = 
     Form(
       (env: Env) =>  
-	for {s <- init[Int]} yield 
+	for {s <- init[FormState]} yield 
 	  {
 	    val lab = 
 	      (errors: Map[String,String]) => <label for={ "name" + s } class="digestive-label">{ name }</label>
 	    ( success(()),  lab )
 	  }
     )
-
-
-  
-
-  /*
-   def inputN(name: String): Form[Name] =
-   Form(
-   (env: Env) =>  
-   for {s <- init[Int] 
-   _ <- modify((_: Int) + 1)
-   } yield {
-   val lookupName = name + s
-   println("lookupName " + lookupName)
-   val valid: Validation[String,Name] =
-   for (a <- env.get(lookupName).toSuccess[String]("could not lookup for " + lookupName);
-   b <- Name(a)) yield b
-   val view =
-   (errors: Map[String,String]) => 
-   <input type="text" name={ lookupName } id={ lookupName } value={ errors.get(lookupName).toString } class="digestive-input" />
-   (valid ,view)
-   })*/
-
-
-  /*
-   def inputText[A](name: String = "")(implicit f: FromString[A]): Form[A] =
-   Form(
-   (env: Env) =>  
-   for {s <- init[Int] 
-   _ <- modify((_: Int) + 1)
-   } yield {
-   val lookupName = name + s
-   println("lookupName " + lookupName)
-   val valid =
-   env.get(lookupName).toSuccess[NonEmptyList[(String,String)]](
-   nel((lookupName, "could not lookup for " + name),List())).fromString
-   val view =
-   (errors: Map[String,String]) => 
-   <input type="text" name={ lookupName } id={ lookupName } value={ errors.get(lookupName).toString } class="digestive-input" />
-   (valid,view)
-   }
-   )
-   */
-
-  //def inputAndLabel(name: String): Form[String] =
 }
+
