@@ -117,7 +117,15 @@ object Formlets {
 
   def getFormView[A](frm: Form[A]) =
     runFormState(frm, Map(), false)._2
+
   
+  def getFormValidation[A](frm: Form[A], env: Env): Validation[NodeSeq,A] = {
+    val (valid, view) = runFormState(frm, env) 
+    valid match {
+      case Success(a) => success[NodeSeq,A](a)
+      case Failure(x) => failure[NodeSeq,A](view)
+    }
+  }
 
   def validate[A](form: Form[Validation[String,A]]): Form[A] = 
     Form(
