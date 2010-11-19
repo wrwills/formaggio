@@ -38,9 +38,10 @@ object Formlets {
      */    
     def ++>[B](frm: Form[B]): Form[B] = 
       Form((env: Env) => 
-	for {s <- init[FormState]
-	     arslt <- this.value(env)
+	for {
 	     frslt <- frm.value(env)
+	     arslt <- this.value(env)
+	     s <- init[FormState]
 	   } yield
 	     (frslt._1, arslt._2 ⊹ frslt._2))
 	 
@@ -119,7 +120,8 @@ object Formlets {
 	  val valid = frslt._1 match {
 	    case Success(x) => x match {
 	      case Success(xx) => success[NonEmptyList[(String,String)],A](xx)
-	      case Failure(xy) => failure[NonEmptyList[(String,String)],A](NonEmptyList( ("",xy) ))
+	      case Failure(xy) => failure[NonEmptyList[(String,String)],A](
+		NonEmptyList( (s._2.headOption.getOrElse("unknown"),xy) ))
 	    }
 	    case Failure(y) => failure[NonEmptyList[(String,String)],A](y)
 	  }

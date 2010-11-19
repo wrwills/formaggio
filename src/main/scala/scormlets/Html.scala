@@ -32,9 +32,29 @@ object Html {
 	for {s <- init[FormState]} yield 
 	  {
 	    val lab = 
-	      (errors: Map[String,String]) => <label for={ "name" + s } class="digestive-label">{ name }</label>
+	      (errors: Map[String,String]) => <label for={ s._2.headOption.getOrElse("unknown") } class="scormlets-label">{ name }</label>
 	    ( success(()),  lab )
-	  }
+	  })
+
+
+  /**
+   * pull all errors from the form for the current form range and display them
+   * reset the form range
+   */  
+  def errors: Form[Unit] =
+    Form(
+      (env: Env) =>  
+	for {s <- init[FormState]
+	     _ <- modify((x: (FormState)) => (x._1 + 1, List[String]()))
+	   } yield {
+	     val lab = 
+	       (errors: Map[String,String]) => 
+		 <ul class="scormlets-errors">{ 
+		   s._2 map ((x: String) => <li>{x}</li>) 
+		 }</ul>
+	     ( success(()),  lab )
+	   }
     )
+
 }
 
