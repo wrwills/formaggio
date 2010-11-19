@@ -46,19 +46,21 @@ object Formlets {
 	   } yield
 	     (frslt._1, arslt._2 ⊹ frslt._2))
 	 
-  }
     /*
      * Append a unit form to the right. See '++>'.
-     */
-    /*
+     */    
     def <++(frm: Form[Unit]): Form[A] = 
       Form((env: Env) => 
-	for {s <- init[FormState]
-	     arslt <- this.value(env)
-	     frslt <- frm.value(env)
-	   } yield 
-	     (frslt._1, arslt._2 ⊹ frslt._2))
-      */
+	for {
+	  s <- init[FormState]
+	  arslt <- this.value(env)
+	  frslt <- frm.value(env)
+	} yield 
+	  (arslt._1, arslt._2 ⊹ frslt._2))
+
+
+  }
+      
 //   // <++ :: (Monad m, Monoid v)
 
 
