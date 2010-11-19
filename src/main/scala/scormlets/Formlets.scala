@@ -3,9 +3,8 @@ package scormlets
 import scalaz._
 
 /**
- * trying again with state
+ * Formlets
  */
-
 object Formlets {
 
   import Scalaz._
@@ -61,9 +60,6 @@ object Formlets {
 
   }
       
-//   // <++ :: (Monad m, Monoid v)
-
-
 
   object Form {
     def apply[A](fn: Env => State[FormState,(ValidForm[A],View)]) = 
@@ -156,49 +152,4 @@ object Formlets {
 
 	 	 
 }
-/*
-object Formlets5Test {
-  import Scalaz._
-  import Formlets._
-  import Html._
-
-  case class FullName(first: Name, second: Name)
-  case class FullName2(first: String, second: String)
-  val myForm = (input("first") ⊛ input("last")){FullName2(_,_)}
-
-  sealed trait Name extends NewType[String]
-  object Name {
-    def apply(s: String): Validation[String, Name] = 
-      if (s.headOption.exists(_.isUpper))
-	(new Name {val value = s}).success
-      else
-	"Name must start with a capital letter".fail
-  }
-
-  //val myNameForm: Form[Validation[String,Name]] = input("name") ∘ Name.apply 
-  val myNameForm: Form[Name] = validate(input("name") ∘ Name.apply )
-    val fullNameForm = (myNameForm  ⊛ myNameForm){  FullName(_,_) }
-  //val myFormTwo = (myNameForm ⊛ myNameForm){ FullName(_,_) }
-
-  // 
-  //val labelledFullNameForm = (label("First") ⊛ myNameForm ⊛ label("Second") ⊛ myNameForm){  FullName(_,_) }
-  def labelledNameForm(s: String) =  validate(label(s) *> (input("name") ∘ Name.apply))
-  val labelledFullNameForm = (labelledNameForm("First")  ⊛ labelledNameForm("Second")){ FullName(_,_) }
-
-  def main(args: Array[String]) = {
-    /*
-    println((myForm.value)(Map()) ! 0)
-    println((myForm.value)(Map("first1"->"Jim")) ! 0)
-    println((myForm.value)(Map("first1"->"Jim", "last2" -> "Bob")) ! 0)
-    */
-    println(runFormState(myForm, Map("first1"->"Jim")))
-    println(runFormState(myForm, Map("first1"->"Jim", "last2" -> "Bob")))
-    println(getFormView(myForm))	    
-
-    println(runFormState( fullNameForm, Map("name2"-> "Jim", "name4" -> "Bob")))
-
-    println(runFormState( labelledFullNameForm, Map("name0"-> "Jim", "name1" -> "Bob")))
-  }
-
-}*/
 
