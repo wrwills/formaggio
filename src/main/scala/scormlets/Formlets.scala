@@ -35,13 +35,14 @@ object Formlets {
      * Append a unit form to the left. This is useful for adding labels or error
      * fields
      * only works if current form returns Unit
+     * Evaluate the form that matters first, so we have a correct range set 
      */    
     def ++>[B](frm: Form[B]): Form[B] = 
       Form((env: Env) => 
 	for {
 	     frslt <- frm.value(env)
-	     arslt <- this.value(env)
 	     s <- init[FormState]
+	     arslt <- this.value(env)
 	   } yield
 	     (frslt._1, arslt._2 ⊹ frslt._2))
 	 
@@ -114,8 +115,8 @@ object Formlets {
     Form(
       (env: Env) =>
 	for {
-	  s <- init[FormState];
 	  frslt <- form.value(env) 
+	  s <- init[FormState]
 	} yield {
 	  val valid = frslt._1 match {
 	    case Success(x) => x match {

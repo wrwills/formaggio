@@ -12,9 +12,10 @@ object Html {
        	for {s <- init[FormState] 
 	     val newInt = s._1 + 1
 	     val lookupName = name + (s._1 + 1)
-	     _ <- modify((x: (FormState)) => (x._1 + 1, lookupName :: x._2))
+	     ns <- modify((x: (FormState)) => (x._1 + 1, lookupName :: x._2))
 	   } yield {
-	     val lookupName = name + s._1
+	     println("input state: " + ns)
+	     //val lookupName = name + s._1
 	     val lookup = env.get(lookupName)
 	     val valid =
                lookup.toSuccess[NonEmptyList[(String,String)]](
@@ -31,6 +32,7 @@ object Html {
       (env: Env) =>  
 	for {s <- init[FormState]} yield 
 	  {
+	    println("label state: " + s) 
 	    val lab = 
 	      (errors: Map[String,String]) => <label for={ s._2.headOption.getOrElse("unknown") } class="scormlets-label">{ name }</label>
 	    ( success(()),  lab )
