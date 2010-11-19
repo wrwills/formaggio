@@ -27,8 +27,9 @@ class FormletsSpecs extends Specification {
   val fullNameForm = (myNameForm  ⊛ myNameForm){  FullName(_,_) }
 
   def labelledNameForm(s: String) =  validate(label(s) ++> (input("name") ∘ Name.apply))
+  //def labelledNameForm(s: String) =  validate(label(s) ++> (input("name") ∘ Name.apply)) <++ ferrors
 
-  val labelledFullNameForm = (labelledNameForm("First")  ⊛ labelledNameForm("Second")){ FullName(_,_) }
+  val labelledFullNameForm = (labelledNameForm("First")  ⊛ labelledNameForm("Second")){ FullName(_,_) } <++ ferrors
 
 
   def getValueForInput(s: String, view: NodeSeq) =
@@ -68,6 +69,7 @@ class FormletsSpecs extends Specification {
 
     "form should fail if one of the values isn't filled in" in {
       val rslt = runFormState(labelledFullNameForm, Map("name1"-> "Jim"))
+      println(rslt._2)
       
       rslt._1.isFailure must beTrue
       rslt._1.fail.toOption.get.head must_==  ("name2","could not lookup for name")
@@ -79,6 +81,7 @@ class FormletsSpecs extends Specification {
       rslt._1.fail.toOption.get.head must_==  ("name2","Name must start with a capital letter")
 
       val view = rslt._2
+      println(view)
       getValueForInput("name1", view) must_== "Jim"
       getValueForInput("name2", view) must_== "bob"
     }
