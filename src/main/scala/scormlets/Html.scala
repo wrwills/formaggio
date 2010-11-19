@@ -25,7 +25,10 @@ object Html {
 	     (valid,view)
 	   })
 
-  // need to modify state monad to be (String,Int) for this to work
+  /**
+   * add an html5 label to the left of an input
+   * the for attribute will use the id of the input to the right
+   */
   def label(name: String): Form[Unit] = 
     Form(
       (env: Env) =>  
