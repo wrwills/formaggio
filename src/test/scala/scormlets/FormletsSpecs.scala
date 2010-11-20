@@ -32,16 +32,36 @@ class FormletsSpecs extends Specification {
   val labelledFullNameForm = (labelledNameForm("First")  ⊛ labelledNameForm("Second")){ FullName(_,_) } <++ ferrors
 
 
-  def getValueForInput(s: String, view: NodeSeq) =
+
+//    (view \\ "input") filter ( (x:Node) => (x \ "@id").text == s ) map ( (_:Node) \ "@value") head
+  def getInput(s: String, view: NodeSeq) =  
+    ((view \\ "input") filter ((x:Node) => (x \ "@id").text == s)).head
+  /*
     (for {i <- view \\ "input";
-	  r <- i \ "@id";
-	  if (r==Text(s)) }
-     yield (i \ "@value").toString).head
+	  if( (i \ "@id").text == s) }
+     yield i).head*/
+
+
+  def getValueForInput(s: String, view: NodeSeq) =  
+    (getInput(s,view) \ "@value").text
+/*
+    (for {i <- view \\ "input";
+	  if( (i \ "@id").text == s) }
+     yield (i \ "@value").toString).head*/
+     
 
   def getValueForLabel(s: String, view: NodeSeq) =
-    (for {i <- view \\ "label";
+    (view \\ "label") filter ( _.text == s ) map (_ \ "@for") map (_.text) head
+  /*
+    (for {i <- view \\ "label"
 	  if (i.text == s) }
      yield (i \ "@for").text).head
+     */
+
+  def getErrorMessageForField(s: String, view: NodeSeq) =  
+    (for {i <- view \\ "li";
+	  if( (i \ "@id").text == s) }
+     yield i.text).head
 
   
   "form view should be correct" in {
@@ -84,6 +104,13 @@ class FormletsSpecs extends Specification {
       println(view)
       getValueForInput("name1", view) must_== "Jim"
       getValueForInput("name2", view) must_== "bob"
+      
+
+      "and the view should contain an appropriate error message" in {
+	getErrorMessageForField("name2", view) must_== "Name must start with a capital letter"
+	(getInput("name2", view) \ "@class").text must_== "digestive-input-error"
+	//for {
+      }
     }
   }
 

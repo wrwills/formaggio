@@ -21,7 +21,10 @@ object Html {
 		 nel((lookupName, "could not lookup for " + name),List()))
 	     val view =
 	       (errors: Map[String,String]) => 
-		 <input type="text" name={ lookupName } id={ lookupName } value={ lookup.getOrElse("") } class="digestive-input" />
+		 <input type="text" name={ lookupName } id={ lookupName } 
+		   value={ lookup.getOrElse("") } 
+		   class={ "digestive-input" +
+			  (if (errors.contains(lookupName)) "-error" else "") } />
 	     (valid,view)
 	   })
 
@@ -56,10 +59,10 @@ object Html {
 		 val errorsForRange = 
 		   for {field <- s._2
 			er    <- errors.get(field)
-		      } yield er
+		      } yield (field,er)
 		 if (errorsForRange.size > 0)
 		   <ul class="scormlets-errors">{ 
-		     errorsForRange map ((e:String) => (<li>{ e }</li>))
+		     errorsForRange map ((e:(String,String)) => (<li id={e._1}>{ e._2 }</li>))
 		   }</ul>
 		 else 
 		   Text("")
