@@ -58,11 +58,11 @@ object FormletsSpecs extends Specification {
   case class FullName(first: Name, second: Name)
   case class FullName2(first: String, second: String)
 
-  val myForm = (input("first") ⊛ input("last")){FullName2(_,_)}
-  val myNameForm: Form[Name] = validate(input("name") ∘ Name.apply )
+  val myForm = (inputText("first") ⊛ inputText("last")){FullName2(_,_)}
+  val myNameForm: Form[Name] = validate(inputText("name") ∘ Name.apply )
   val fullNameForm = (myNameForm  ⊛ myNameForm){  FullName(_,_) }
 
-  def labelledNameForm(s: String) =  validate(label(s) ++> (input("name") ∘ Name.apply))
+  def labelledNameForm(s: String) =  validate(label(s) ++> (inputText("name") ∘ Name.apply))
 
   val labelledFullNameForm = (labelledNameForm("First")  ⊛ labelledNameForm("Second")){ FullName(_,_) } <++ ferrors
 
@@ -83,8 +83,8 @@ object FormletsSpecs extends Specification {
 
   }
 
-  //val ageForm = validate(label("Age") ++> (input("age") ∘ (_: String).parseInt))
-  val ageForm = validate(label("Age") ++> (input("age") ∘ Age.apply))
+  //val ageForm = validate(label("Age") ++> (inputText("age") ∘ (_: String).parseInt))
+  val ageForm = validate(label("Age") ++> (inputText("age") ∘ Age.apply))
   case class Person(name: FullName, age: Age)
 
   val personForm = (labelledFullNameForm ⊛ ageForm){Person(_,_)}

@@ -15,6 +15,17 @@ object Formlets {
   import Applicative._
   import Pointed._
 
+  case class LookupException(e: String) extends Exception(e)
+
+  def liftExceptionValidation[A](v: Validation[Exception,A]): Validation[(String,String),A] =
+    v match {
+      case Success(s) => success[(String,String),A](s)
+      case Failure(f) => f match {
+	case LookupException(e) =>  failure[(String,String),A](e, "Failed lookup for " + e)
+	case _                =>  failure[(String,String),A]("", f.toString)
+      }
+    }
+
   type Errors = Map[String,String]
   type Env = Map[String, String] // worry about files later
   type ValidForm[A] = Validation[NonEmptyList[(String,String)],A]

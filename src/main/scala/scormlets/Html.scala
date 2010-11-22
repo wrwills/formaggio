@@ -7,7 +7,8 @@ object Html {
   import Formlets._
   import scala.xml._
 
-  def input(name: String): Form[String] =
+  def input[A](name: String, view: (String,String) => View,
+	  validLookup: (Map[String,String], String) => Validation[(String,String),A]): Form[A] =
     Form(
       (env: Env) =>  
        	for {s <- init[FormState] 
@@ -15,19 +16,56 @@ object Html {
 	     val lookupName = name + (s._1 + 1)
 	     ns <- modify((x: (FormState)) => (x._1 + 1, lookupName :: x._2))
 	   } yield {
-	     val lookup = env.get(lookupName)
-	     val valid =
-               lookup.toSuccess[NonEmptyList[(String,String)]](
-		 nel((lookupName, "could not lookup for " + name),List()))
-	     val view =
-	       (errors: Map[String,String]) => 
-		 <input type="text" name={ lookupName } id={ lookupName } 
-		   value={ lookup.getOrElse("") } 
-		   class={ "digestive-input" +
-			  (if (errors.contains(lookupName)) "-error" else "") } />
-	     (valid,view)
+	     val valid: Validation[(String,String),A] = validLookup(env, lookupName)
+	     (valid.liftFailNel, view(lookupName, 
+				      valid match { 
+					case Success(s) => s.toString 
+					case Failure(_) => "" 
+				      } ) )
 	   })
+  
+  def input(name: String = "sc_", view: (String,String) => View): Form[String] =
+    input(name, view, 
+	  (env: Map[String,String], lookupName: String) => 
+	    env.get(lookupName).toSuccess[(String,String)](
+		 (lookupName, "could not lookup for " + name) ) )
 
+  def errorClassView(error: Boolean ) =  "digestive-input" + (if (error) "-error" else "")
+
+  def inputText(nname: String = "sc_", password: Boolean = false): Form[String] =
+    input(nname,	       
+	  (name: String, value: String) => 
+	    ((errors: Map[String,String]) => 
+		 <input type="text" name={ name } id={ name } 
+		   value={ value } 
+		   class={ errorClassView( errors.contains(name) ) } />) )
+
+ def inputTextArea(nname: String = "sc_", cols: Int = 40, rows: Int = 3): Form[String] =
+        input(nname,	       
+	  (name: String, value: String) => 
+	    ((errors: Map[String,String]) => 
+		 <textarea  name={ name } id={ name } 
+		   class={ errorClassView(errors.contains(name) ) }
+		   cols={ cols.toString } rows={ rows.toString } >{ value }</textarea>) )
+
+
+  def inputPassword(nname: String = "sc_"): Form[String] =
+    inputText(nname, true)
+
+  def inputCheckbox(nname: String = "sc_"): Form[Boolean] =
+    input(
+      nname,	       
+      (name: String, value: String) => ((errors: Map[String,String]) => 
+	<input type="checkbox" name={ name } id={ name } 
+					value={ value } 
+					class={ errorClassView(false) } />), 
+      (env: Map[String,String], lookupName: String) => 
+	liftExceptionValidation(for {
+	  x <- env.get(lookupName).toSuccess[Exception](LookupException(lookupName));
+	  y <- x.parseBoolean
+	} yield y)
+    )
+         
   /**
    * add an html5 label to the left of an input
    * the for attribute will use the id of the input to the right
