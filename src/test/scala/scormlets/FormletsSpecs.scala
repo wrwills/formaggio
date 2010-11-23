@@ -9,37 +9,20 @@ import Html._
 
 object ViewHelpers {
   import scala.xml._
-//    (view \\ "input") filter ( (x:Node) => (x \ "@id").text == s ) map ( (_:Node) \ "@value") head
+
   def getInput(s: String, view: NodeSeq) =  
     ((view \\ "input") filter ((x:Node) => (x \ "@id").text == s)).head
-  /*
-    (for {i <- view \\ "input";
-	  if( (i \ "@id").text == s) }
-     yield i).head*/
-
 
   def getValueForInput(s: String, view: NodeSeq) =  
     (getInput(s,view) \ "@value").text
-/*
-    (for {i <- view \\ "input";
-	  if( (i \ "@id").text == s) }
-     yield (i \ "@value").toString).head*/
-     
 
   def getValueForLabel(s: String, view: NodeSeq) =
     (view \\ "label") filter ( _.text == s ) map (_ \ "@for") map (_.text) head
-  /*
-    (for {i <- view \\ "label"
-	  if (i.text == s) }
-     yield (i \ "@for").text).head
-     */
 
   def getErrorMessageForField(s: String, view: NodeSeq) =  
     (for {i <- view \\ "li";
 	  if( (i \ "@id").text == s) }
-     yield i.text).headOption
-
-  
+     yield i.text).headOption  
 }
 
 object FormletsSpecs extends Specification {  
@@ -62,7 +45,7 @@ object FormletsSpecs extends Specification {
   val myNameForm: Form[Name] = validate(inputText("name") ∘ Name.apply )
   val fullNameForm = (myNameForm  ⊛ myNameForm){  FullName(_,_) }
 
-  def labelledNameForm(s: String) =  validate(label(s) ++> (inputText("name") ∘ Name.apply))
+  def labelledNameForm(s: String) =  validate(label(s) ++> (inputText("name", Some("Billy")) ∘ Name.apply))
 
   val labelledFullNameForm = (labelledNameForm("First")  ⊛ labelledNameForm("Second")){ FullName(_,_) } <++ ferrors
 
@@ -107,7 +90,7 @@ object FormletsSpecs extends Specification {
 		  ){Person(_,_,_,_,_)}
 
 
-  
+  /*
   "form view should be correct" in {
 
     val view = runFormState(labelledFullNameForm, Map("name1"-> "Jim", "name2" -> "Bob"))._2
@@ -159,7 +142,7 @@ object FormletsSpecs extends Specification {
 	//for {
       }
     }
-  }
+  }*/
 
   "for a person form" in {
     val form = personForm
@@ -197,9 +180,13 @@ object FormletsSpecs extends Specification {
     "form should fail if one of the values isn't filled in" in {
       val rslt = runFormState(form, Map("name1"-> "Jim"))
       println(rslt)
-      
+
+      val view = rslt._2
+      // gets filled in with default value
+      getValueForInput("name2", view) must_== "Billy"
+
       rslt._1.isFailure must beTrue
-      rslt._1.fail.toOption.get.head must_==  ("name2","name can not be empty")
+      rslt._1.fail.toOption.get.head must_==  ("name2", LookupError)
     }
 
     "form should fail if one of the values isn't filled in correctly" in {
@@ -208,8 +195,8 @@ object FormletsSpecs extends Specification {
       rslt._1.isFailure must beTrue
 
       val errors = rslt._1.fail.toOption.get.list.toMap
-      errors.get("name2") must_== Some("Name must start with a capital letter")
-      errors.get("password7") must_== Some("passwords don't match")
+      //(errors.get("name2").get)("") must_== Some(GenericError("Name must start with a capital letter"))
+      //(errors.get("password7").get)("") must_== Some(GenericError("passwords don't match"))
 
       val view = rslt._2
       getValueForInput("name1", view) must_== "Jim"

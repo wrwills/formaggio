@@ -2,6 +2,28 @@ package scormlets
 
 import scalaz._
 
+
+trait FormError{
+  def getErrorMessage(i: String): String
+}
+
+trait FormException extends FormError with PimpedType[Exception] {
+  def getErrorMessage(i: String) = value.getMessage + ": " + i
+}
+
+case object LookupError extends FormError {
+  override def getErrorMessage(i: String) = "failed to find value for " + i
+}  
+
+case object EmptyStringError extends FormError {
+  override def getErrorMessage(i: String) = "empty string not allowed for " + i
+}
+
+case class GenericError(msg: String => String) extends FormError {
+  override def getErrorMessage(i: String) = msg(i)
+}
+
+
 /**
  * Formlets
  */
@@ -15,20 +37,42 @@ object Formlets {
   import Applicative._
   import Pointed._
 
-  case class LookupException(e: String) extends Exception(e)
+  // allows us to treat exceptions arising from eg parsing errors as form validation
+  // errors  
+  //implicit 
+  def ExceptionTo(e: Exception): FormException = new FormException {
+    val value = e
+  } 
 
-  def liftExceptionValidation[A](v: Validation[Exception,A]): Validation[(String,String),A] =
+  //def liftFormErrorValidationToFormValidation[A](v: Validation[FormError,A]): 
+
+  def addIndexToValidation[A](i: String, v: Validation[FormError,A]): Validation[(String,FormError),A] =
+    v match {
+      case Success(s) => s.success
+      case Failure(f) => failure(i, f)
+    }     
+  
+  //case class LookupException(e: String) extends Exception(e)
+  
+  def liftExceptionValidation[A](v: Validation[Exception,A]): Validation[(String,Exception),A] =
+    v match {
+      case Success(s) => s.success[(String,Exception)]
+      case Failure(f) => failure[(String,Exception),A]("", f)
+    } 
+  /*
     v match {
       case Success(s) => success[(String,String),A](s)
       case Failure(f) => f match {
-	case LookupException(e) =>  failure[(String,String),A](e, e + " can not be empty")
+	case LookupException =>  failure[(String,String),A](e, " can not be empty")
 	case _                =>  failure[(String,String),A]("", f.toString)
       }
-    }
+    } */
 
   type Errors = Map[String,String]
+  //type Errors = Map[String,Exception]
   type Env = Map[String, String] // worry about files later
-  type ValidForm[A] = Validation[NonEmptyList[(String,String)],A]
+  //type ValidForm[A] = Validation[NonEmptyList[(String,String)],A]
+  type ValidForm[A] = Validation[NonEmptyList[(String,FormError)],A]
 
   // form state is an integer showing the number of the last input together 
   type FormState = (Int,List[String])
@@ -113,34 +157,101 @@ object Formlets {
 	   })
   }
 
+  /*
+  def liftValidForm(rslt: Validation[Exception,A]): ValidForm[A] =
+    rslt match {
+      case Success(x) => x match {
+	      case Success(xx) => success[NonEmptyList[(String,Exception)],A](xx)
+	      case Failure(xy) => failure[NonEmptyList[(String,Exception)],A](
+		NonEmptyList( (s._2.headOption.getOrElse("unknown"), xy ) ))
+	    }
+      case Failure(y) => failure[NonEmptyList[(String,Exception)],A](y)
+    }
+
+  def liftValidForm(rslt: Validation[String,A]): ValidForm[A] =
+    rslt match {
+      case Success(x) => x match {
+	      case Success(xx) => success[NonEmptyList[(String,Exception)],A](xx)
+	      case Failure(xy) => failure[NonEmptyList[(String,Exception)],A](
+		NonEmptyList( (s._2.headOption.getOrElse("unknown"), xy ) ))
+	    }
+      case Failure(y) => failure[NonEmptyList[(String,Exception)],A](y)
+    } */
+
+//  def convertFailure[A](f: Failure[Exception, A]): Failure[NonEmptyList
+
+  def validate[A](form: Form[Validation[String,A]]): Form[A] = 
+    validate(form, (x:String) => GenericError((_: String) => x) )
+
+  /*
+  def validate[A](form: Form[Validation[Exception,A]]): Form[A] = 
+    validate(form, (x: Exception) => x)
+    */
+
   /**
    * convert a form which returns a validation of A into a form with returns A
    * ie lift the validation of A into the form validation
    */
-  def validate[A](form: Form[Validation[String,A]]): Form[A] = 
+  def validate[A,B](form: Form[Validation[B,A]], convertFailure: B => FormError): Form[A] = 
     Form(
       (env: Env) =>
 	for {
 	  frslt <- form.value(env) 
 	  s <- init[FormState]
 	} yield {
-	  val valid = frslt._1 match {
+	  val valid: ValidForm[A] = frslt._1 match {
 	    case Success(x) => x match {
-	      case Success(xx) => success[NonEmptyList[(String,String)],A](xx)
-	      case Failure(xy) => failure[NonEmptyList[(String,String)],A](
-		NonEmptyList( (s._2.headOption.getOrElse("unknown"),xy) ))
-	    }
-	    case Failure(y) => failure[NonEmptyList[(String,String)],A](y)
+	      case Success(xx) => success(xx)
+	      case Failure(xy) => {
+		val convertedFailure = xy match {
+		  case e: Exception => e
+		  case _            => GenericError((_: String) => xy.toString)
+		}
+		failure[(String,FormError),A](s._2.headOption.getOrElse("unknown"), convertFailure(xy)).liftFailNel
+	      }}
+	    case Failure(y) => failure(y)
 	  }
 	  (valid, frslt._2)
 	}
     )
+
+							   /*
+  def validate[A](form: Form[Validation[Any,A]]): Form[A] = 
+    Form(
+      (env: Env) =>
+	for {
+	  frslt <- form.value(env) 
+	  s <- init[FormState]
+	} yield {
+	  val valid: ValidForm[A] = frslt._1 match {
+	    case Success(x) => x match {
+	      case Success(xx) => success[NonEmptyList[(String,Exception)],A](xx)
+	      case Failure(xy) => {
+		val convertedFailure = xy match {
+		  case e: Exception => e
+		  case _            => GenericError(xy.toString)
+		}		
+		failure[NonEmptyList[(String,Exception)],A](
+		  NonEmptyList( (s._2.headOption.getOrElse("unknown"), convertedFailure ) ))
+	      }}
+	    case Failure(y) => failure[NonEmptyList[(String,Exception)],A](y)
+	  }
+	  (valid, frslt._2)
+	}
+    )*/
+
+  //def errorToString(i: String, e: Exception) =
+    
   
   def runFormState[A](frm: Form[A], env: Env, showErrors: Boolean = true) = {
     val (valid,view) = (frm.value(env)) ! (0,List[String]())
     val errors: Errors = valid match {
       case Success(_) => Map()
-      case Failure(x) => if (showErrors) x.list.toMap else Map()
+      case Failure(x) => 
+	if (showErrors) 
+	  x.list.map((x: (String,FormError)) => (x._1, x._2.getErrorMessage(x._1))).toMap 
+	else 
+	  Map()
     }
     (valid, view(errors))
   }

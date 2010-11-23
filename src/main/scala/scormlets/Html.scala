@@ -16,9 +16,12 @@ object Html {
   import Formlets._
   import scala.xml._
 
-	     	     
-  def input[A](name: String, view: (String,String) => View,
-	  validLookup: (Map[String,String], String) => Validation[(String,String),A]): Form[A] =
+
+  /**
+   *
+   */
+  def input[A](name: String, default: Option[A], view: (String,String) => View,
+	  validLookup: (Map[String,String], String) => Validation[(String,FormError),A]): Form[A] =
     Form(
       (env: Env) =>  
        	for {s <- init[FormState] 
@@ -26,33 +29,40 @@ object Html {
 	     val lookupName = name + (s._1 + 1)
 	     ns <- modify((x: (FormState)) => (x._1 + 1, lookupName :: x._2))
 	   } yield {
-	     val valid: Validation[(String,String),A] = validLookup(env, lookupName)
+	     val valid: Validation[(String,FormError),A] = validLookup(env, lookupName)
 	     (valid.liftFailNel, view(lookupName, 
 				      valid match { 
 					case Success(s) => s.toString 
-					case Failure(_) => "" 
+					case Failure(_) => default.map(_.toString).getOrElse("")
 				      } ) )
 	   })
   
   /*
    * standard string input
    * empty strings are not allowed
+   *
+   * we need to distinguish between a value being there as an empty string in the lookup environment
+   * and it not being there for display of default values
    */
-  def input(name: String = "sc_", view: (String,String) => View): Form[String] =
-    input(name, view, 
+  def input(name: String = "sc_", default: Option[String], view: (String,String) => View): Form[String] =
+    input(name, default, view, 
 	  (env: Map[String,String], lookupName: String) => 
-	    env.getOrElse(lookupName, "") match {
-	      case "" => failure[(String,String),String]((lookupName, name + " can not be empty"))
-	      case s  => s.success[(String,String)]
+	    //env.getOrElse(lookupName, "") match {
+	    env.get(lookupName) match {
+	      case Some("") => failure[(String,FormError),String]((lookupName, EmptyStringError))
+	      case None => failure[(String,FormError),String]((lookupName, LookupError))
+	      case Some(s)  => s.success[(String,FormError)]
 	    })
 
-  def optionalInput(view: (String,String) => View, name: String = "sc_"): Form[Option[String]] =
-    input(name, view, 
+  def optionalInput(view: (String,String) => View, name: String = "sc_", default: Option[String]): Form[Option[String]] =
+  //def optionalInput(view: (String,String) => View, name: String = "sc_"): Form[Option[String]] =
+    input(name, None, view, 
 	  (env: Map[String,String], lookupName: String) => 
-	    (env.getOrElse(lookupName, "") match {
-	      case "" => None
-	      case s  => Some(s)
-	    }).success[(String,String)] )
+	    Some((env.get(lookupName) match {
+	      case Some("") => default.getOrElse("")
+	      case Some(s)  => s
+	      case _        => ""
+	    })).success[(String,FormError)] )
 	  
         
   def errorClassView(error: Boolean ) =  "digestive-input" + (if (error) "-error" else "")
@@ -64,41 +74,66 @@ object Html {
        value={ value } 
        class={ errorClassView( errors.contains(name) ) } />) 
 
-  def optionalInputText(nname: String = "sc_"): Form[Option[String]] =
-    optionalInput(inputTextView, nname)
+  def optionalInputText(nname: String = "sc_", default: Option[String] = None): Form[Option[String]] =
+    optionalInput(inputTextView, nname, default)
 
-  def inputText(nname: String = "sc_", password: Boolean = false): Form[String] =
-    input(nname, inputTextView)
+  def inputText(nname: String = "sc_", default: Option[String] = None, password: Boolean = false): Form[String] =
+    input(nname, default, inputTextView)
 
   def inputTextAreaView(cols: Int, rows: Int)  = 
-    (name: String, value: String) => 
+    ((name: String, value: String) => 
       ((errors: Map[String,String]) => 
 	<textarea  name={ name } id={ name } 
        class={ errorClassView(errors.contains(name) ) }
-       cols={ cols.toString } rows={ rows.toString } >{ value }</textarea>)
+       cols={ cols.toString } rows={ rows.toString } >{ value }</textarea>))
+      
+    def inputTextArea(nname: String = "sc_", cols: Int = 40, rows: Int = 3, default: Option[String] = None): Form[String] =
+      input(nname, default, inputTextAreaView(cols, rows))
 
-      def inputTextArea(nname: String = "sc_", cols: Int = 40, rows: Int = 3): Form[String] =
-        input(nname, inputTextAreaView(cols, rows))
+  def optionalInputTextArea(nname: String = "sc_", default: Option[String] = None, cols: Int = 40, rows: Int = 3): Form[Option[String]] =
+    optionalInput(inputTextAreaView(cols, rows), nname, default)
 
-  def optionalInputTextArea(nname: String = "sc_", cols: Int = 40, rows: Int = 3): Form[Option[String]] =
-    optionalInput(inputTextAreaView(cols, rows), nname)
+  def inputPassword(nname: String = "sc_", default: Option[String] = None): Form[String] =
+    inputText(nname, default, true)
 
-  def inputPassword(nname: String = "sc_"): Form[String] =
-    inputText(nname, true)
+  /*
+  implicit */
+  def validationExceptionToValidationFormError[A](e: Validation[Exception,A]): Validation[FormError,A] =
+    e match {
+      case Success(s) => success(s)
+      case Failure(f) => failure(ExceptionTo(f))
+    }
 
-  def inputCheckbox(nname: String = "sc_"): Form[Boolean] =
+
+  def inputCheckbox(nname: String = "sc_", default: Boolean = false): Form[Boolean] =
     input(
-      nname,	       
+      nname,
+      Some(default),
       (name: String, value: String) => ((errors: Map[String,String]) => 
 	<input type="checkbox" name={ name } id={ name } 
 					value={ value } 
 					class={ errorClassView(false) } />), 
       (env: Map[String,String], lookupName: String) => 
-	liftExceptionValidation(for {
-	  x <- env.get(lookupName).toSuccess[Exception](LookupException(lookupName));
-	  y <- x.parseBoolean
-	} yield y)
+	addIndexToValidation(
+	  lookupName, 
+	  for {
+	    x <- env.get(lookupName).toSuccess[FormError](LookupError);
+	    y <- validationExceptionToValidationFormError(x.parseBoolean)
+	  } yield y)
     )
+
+/*
+	liftExceptionValidation(for {
+	  x <- env.get(lookupName).toSuccess[FormError](LookupError);
+	  y <- validationExceptionToValidationFormError(x.parseBoolean)
+	} yield y)
+*/
+/*
+    Validation[
+FormException {
+    val value = e
+  } */
+
          
   /**
    * add an html5 label to the left of an input
