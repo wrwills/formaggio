@@ -37,7 +37,7 @@ object ViewHelpers {
   def getErrorMessageForField(s: String, view: NodeSeq) =  
     (for {i <- view \\ "li";
 	  if( (i \ "@id").text == s) }
-     yield i.text).head
+     yield i.text).headOption
 
   
 }
@@ -85,11 +85,29 @@ object FormletsSpecs extends Specification {
 
   //val ageForm = validate(label("Age") ++> (inputText("age") ∘ (_: String).parseInt))
   val ageForm = validate(label("Age") ++> (inputText("age") ∘ Age.apply))
-  case class Person(name: FullName, age: Age)
+  //case class Person(name: FullName, age: Age)
 
-  val personForm = (labelledFullNameForm ⊛ ageForm){Person(_,_)}
+  // TODO: check that can handle optional values without having entire form fail
+  case class Person(name: FullName, age: Age, married: Boolean, nickname: Option[String], password: String)
+
+  def passwordVerify(x: String)(y: String): Validation[String, String] = 
+    if (x == y) x.success[String] else failure[String,String]("passwords don't match")
+
+  // TODO: numbering for this is coming out backwards 
+  // doesn't matter for now but need to look at ordering of fields using different notations  
+  val passwordValidation = (label("Password") ++> (inputPassword("password") <*> 
+					     (label("Password (verify)") ++> (inputPassword("password"))
+					     ∘ passwordVerify ) ) )
+
+  val personForm = (labelledFullNameForm ⊛ 
+		    ageForm ⊛ 
+		    ((inputCheckbox("married")) <++ ferrors) ⊛ 
+		    optionalInputText("nickname") ⊛
+		    (validate(passwordValidation) <++ ferrors)
+		  ){Person(_,_,_,_,_)}
 
 
+  
   "form view should be correct" in {
 
     val view = runFormState(labelledFullNameForm, Map("name1"-> "Jim", "name2" -> "Bob"))._2
@@ -118,11 +136,14 @@ object FormletsSpecs extends Specification {
       println(rslt._2)
       
       rslt._1.isFailure must beTrue
-      rslt._1.fail.toOption.get.head must_==  ("name2","could not lookup for name")
+      rslt._1.fail.toOption.get.head must_==  ("name2","name can not be empty")
     }
 
     "form should fail if one of the values isn't filled in correctly" in {
-      val rslt = runFormState(labelledFullNameForm, Map("name1"-> "Jim", "name2" -> "bob"))
+      val rslt = runFormState(labelledFullNameForm, 
+			      Map("name1"-> "Jim", 
+				  "name2" -> "bob"
+				))
       rslt._1.isFailure must beTrue
       rslt._1.fail.toOption.get.head must_==  ("name2","Name must start with a capital letter")
 
@@ -133,7 +154,7 @@ object FormletsSpecs extends Specification {
       
 
       "and the view should contain an appropriate error message" in {
-	getErrorMessageForField("name2", view) must_== "Name must start with a capital letter"
+	getErrorMessageForField("name2", view) must beSome("Name must start with a capital letter")
 	(getInput("name2", view) \ "@class").text must_== "digestive-input-error"
 	//for {
       }
@@ -143,7 +164,17 @@ object FormletsSpecs extends Specification {
   "for a person form" in {
     val form = personForm
 
-    val successRslt = runFormState(form, Map("name1"-> "Jim", "name2" -> "Bob", "age3" -> "30" ))
+    val env = 
+      Map(
+	"name1"-> "Jim", 
+	"name2" -> "Bob", 
+	"age3" -> "30",
+	"password7" -> "password",
+	"password6" -> "password"				     
+      )
+
+
+    val successRslt = runFormState(form, env)
     println(successRslt)
 
     "form view should be correct" in {
@@ -168,31 +199,26 @@ object FormletsSpecs extends Specification {
       println(rslt)
       
       rslt._1.isFailure must beTrue
-      rslt._1.fail.toOption.get.head must_==  ("name2","could not lookup for name")
+      rslt._1.fail.toOption.get.head must_==  ("name2","name can not be empty")
     }
 
     "form should fail if one of the values isn't filled in correctly" in {
-      val rslt = runFormState(form, Map("name1"-> "jim", "name2" -> "bob"))
+      val rslt = runFormState(form, env + ("name2" -> "bob") + ("password6" -> "passwd"))
       println(rslt)
       rslt._1.isFailure must beTrue
-      rslt._1.fail.toOption.get.list must_==  
-      List(
-	("name1","Name must start with a capital letter"),
-	("name2","Name must start with a capital letter"),
-	("age3","could not lookup for age")
-      )
+
+      val errors = rslt._1.fail.toOption.get.list.toMap
+      errors.get("name2") must_== Some("Name must start with a capital letter")
+      errors.get("password7") must_== Some("passwords don't match")
 
       val view = rslt._2
-      println(view)
-      getValueForInput("name1", view) must_== "jim"
+      getValueForInput("name1", view) must_== "Jim"
       getValueForInput("name2", view) must_== "bob"
       
-
       "and the view should contain an appropriate error message" in {
-	getErrorMessageForField("name2", view) must_== "Name must start with a capital letter"
-	getErrorMessageForField("name1", view) must_== "Name must start with a capital letter"
+	getErrorMessageForField("name2", view) must beSome("Name must start with a capital letter")
+	getErrorMessageForField("password7", view) must beSome("passwords don't match")
 	(getInput("name2", view) \ "@class").text must_== "digestive-input-error"
-	//for {
       }
     }
 

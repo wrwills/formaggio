@@ -21,7 +21,7 @@ object Formlets {
     v match {
       case Success(s) => success[(String,String),A](s)
       case Failure(f) => f match {
-	case LookupException(e) =>  failure[(String,String),A](e, "Failed lookup for " + e)
+	case LookupException(e) =>  failure[(String,String),A](e, e + " can not be empty")
 	case _                =>  failure[(String,String),A]("", f.toString)
       }
     }
@@ -103,9 +103,6 @@ object Formlets {
 	     frslt <- f.value(env); 
 	     arslt <- a.value(env)
 	   } yield {
-	     println("applying: state is " + s)
-	     println("arslt: " + arslt)
-	     println("frslt: " + arslt)
 	     val valid = (frslt._1,arslt._1)  match {
 	       case (Success(x),Success(y)) => success(x(y))
 	       case (Success(x),Failure(y)) => failure(y)
@@ -141,7 +138,6 @@ object Formlets {
   
   def runFormState[A](frm: Form[A], env: Env, showErrors: Boolean = true) = {
     val (valid,view) = (frm.value(env)) ! (0,List[String]())
-    //val (valid,view) = (frm.value(env)) ! 0
     val errors: Errors = valid match {
       case Success(_) => Map()
       case Failure(x) => if (showErrors) x.list.toMap else Map()

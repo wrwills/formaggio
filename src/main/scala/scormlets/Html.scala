@@ -2,11 +2,21 @@ package scormlets
 
 import scalaz._
 
+/**
+ * Html5 renderings of form components using scala.xml
+ *
+ * TODO:
+ * - allow optional default values
+ * - mass input
+ * - file upload
+ */
+
 object Html {
   import Scalaz._
   import Formlets._
   import scala.xml._
 
+	     	     
   def input[A](name: String, view: (String,String) => View,
 	  validLookup: (Map[String,String], String) => Validation[(String,String),A]): Form[A] =
     Form(
@@ -24,30 +34,54 @@ object Html {
 				      } ) )
 	   })
   
+  /*
+   * standard string input
+   * empty strings are not allowed
+   */
   def input(name: String = "sc_", view: (String,String) => View): Form[String] =
     input(name, view, 
 	  (env: Map[String,String], lookupName: String) => 
-	    env.get(lookupName).toSuccess[(String,String)](
-		 (lookupName, "could not lookup for " + name) ) )
+	    env.getOrElse(lookupName, "") match {
+	      case "" => failure[(String,String),String]((lookupName, name + " can not be empty"))
+	      case s  => s.success[(String,String)]
+	    })
 
+  def optionalInput(view: (String,String) => View, name: String = "sc_"): Form[Option[String]] =
+    input(name, view, 
+	  (env: Map[String,String], lookupName: String) => 
+	    (env.getOrElse(lookupName, "") match {
+	      case "" => None
+	      case s  => Some(s)
+	    }).success[(String,String)] )
+	  
+        
   def errorClassView(error: Boolean ) =  "digestive-input" + (if (error) "-error" else "")
 
+  val inputTextView = 
+    (name: String, value: String) => 
+      ((errors: Map[String,String]) => 
+	<input type="text" name={ name } id={ name } 
+       value={ value } 
+       class={ errorClassView( errors.contains(name) ) } />) 
+
+  def optionalInputText(nname: String = "sc_"): Form[Option[String]] =
+    optionalInput(inputTextView, nname)
+
   def inputText(nname: String = "sc_", password: Boolean = false): Form[String] =
-    input(nname,	       
-	  (name: String, value: String) => 
-	    ((errors: Map[String,String]) => 
-		 <input type="text" name={ name } id={ name } 
-		   value={ value } 
-		   class={ errorClassView( errors.contains(name) ) } />) )
+    input(nname, inputTextView)
 
- def inputTextArea(nname: String = "sc_", cols: Int = 40, rows: Int = 3): Form[String] =
-        input(nname,	       
-	  (name: String, value: String) => 
-	    ((errors: Map[String,String]) => 
-		 <textarea  name={ name } id={ name } 
-		   class={ errorClassView(errors.contains(name) ) }
-		   cols={ cols.toString } rows={ rows.toString } >{ value }</textarea>) )
+  def inputTextAreaView(cols: Int, rows: Int)  = 
+    (name: String, value: String) => 
+      ((errors: Map[String,String]) => 
+	<textarea  name={ name } id={ name } 
+       class={ errorClassView(errors.contains(name) ) }
+       cols={ cols.toString } rows={ rows.toString } >{ value }</textarea>)
 
+      def inputTextArea(nname: String = "sc_", cols: Int = 40, rows: Int = 3): Form[String] =
+        input(nname, inputTextAreaView(cols, rows))
+
+  def optionalInputTextArea(nname: String = "sc_", cols: Int = 40, rows: Int = 3): Form[Option[String]] =
+    optionalInput(inputTextAreaView(cols, rows), nname)
 
   def inputPassword(nname: String = "sc_"): Form[String] =
     inputText(nname, true)
@@ -110,4 +144,3 @@ object Html {
     )
 
 }
-
