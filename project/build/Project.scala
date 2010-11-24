@@ -40,7 +40,7 @@ class Project(info: ProjectInfo) extends ParentProject(info)
 	// http://groups.google.com/group/simple-build-tool/msg/1f17b43807d06cda
 	override def testClasspath = super.testClasspath +++ buildCompilerJar
 
-      })
+      }, core)
 
 
 
