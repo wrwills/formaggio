@@ -82,6 +82,33 @@ object FormletsSpecs extends Specification {
     }
   }*/
 
+  "inputs should be handled correctly" in {
+    val form = inputText("test", Some("default"))
+
+    "default input should be displayed if there is no input" in {
+      val rslt = runFormState(form, Map())
+      println(rslt)
+      getValueForInput("test1", rslt._2) must_== "default"
+    }
+    "empty string input should override default input" in {
+      val rslt = runFormState(form, Map("test1" -> ""))
+      getValueForInput("test1", rslt._2) must_== ""
+    }
+  }
+
+  "optional inputs should be handled correctly" in {
+    val form = optionalInputText("test")
+    val rslt = runFormState(form, Map("test1" -> "some text"))
+    println(rslt)
+    rslt._1.isSuccess must beTrue
+    val rslt2 = runFormState(form, Map())
+    println(rslt)
+    rslt2._1.isFailure must beTrue
+    val rslt3 = runFormState(form, Map("test1" -> ""))
+    println(rslt3)
+    rslt3._1.isFailure must beTrue
+  }
+
   "for a person form" in {
     val form = personForm
 

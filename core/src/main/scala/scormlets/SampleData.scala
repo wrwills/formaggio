@@ -38,7 +38,7 @@ object SampleData {
       if (0 to 130 contains a)
 	(new Age {val value = a}).success
       else
-	"Age must be in range".fail
+	"Age must be in range 0 to 130".fail
 
     // TODO: figure out a way to make this Validation conversion implicit?
     def apply(a: String): Validation[String, Age] = 

@@ -55,7 +55,6 @@ object Html {
 	    })
 
   def optionalInput(view: (String,String) => View, name: String = "sc_", default: Option[String]): Form[Option[String]] =
-  //def optionalInput(view: (String,String) => View, name: String = "sc_"): Form[Option[String]] =
     input(name, None, view, 
 	  (env: Map[String,String], lookupName: String) => 
 	    Some((env.get(lookupName) match {
