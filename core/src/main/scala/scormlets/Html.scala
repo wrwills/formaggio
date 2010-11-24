@@ -21,7 +21,8 @@ object Html {
    *
    */
   def input[A](name: String, default: Option[A], view: (String,String) => View,
-	  validLookup: (Map[String,String], String) => Validation[(String,FormError),A]): Form[A] =
+	  validLookup: (Map[String,String], String) => Validation[(String,FormError),A],
+	     stringRepresentation: A => String): Form[A] =
     Form(
       (env: Env) =>  
        	for {s <- init[FormState] 
@@ -32,7 +33,9 @@ object Html {
 	     val valid: Validation[(String,FormError),A] = validLookup(env, lookupName)
 	     (valid.liftFailNel, view(lookupName, 
 				      valid match { 
-					case Success(s) => s.toString 
+					case Success(s) => stringRepresentation(s)
+					// empty strings in environment override default input
+					case Failure((_,EmptyStringError)) => ""
 					case Failure(_) => default.map(_.toString).getOrElse("")
 				      } ) )
 	   })
@@ -52,18 +55,39 @@ object Html {
 	      case Some("") => failure[(String,FormError),String]((lookupName, EmptyStringError))
 	      case None => failure[(String,FormError),String]((lookupName, LookupError))
 	      case Some(s)  => s.success[(String,FormError)]
-	    })
+	    }, _.toString)
 
+  /**
+   * optional input
+   * always succeeds even if there is nothing in the lookup environment
+   * empty strings in the lookup environment yield Some("")
+   */
   def optionalInput(view: (String,String) => View, name: String = "sc_", default: Option[String]): Form[Option[String]] =
     input(name, None, view, 
-	  (env: Map[String,String], lookupName: String) => 
-	    Some((env.get(lookupName) match {
-	      case Some("") => default.getOrElse("")
-	      case Some(s)  => s
-	      case _        => ""
-	    })).success[(String,FormError)] )
-	  
-        
+	  (env: Map[String,String], lookupName: String) => {
+	    println("optional input lookup" + env.get(lookupName))
+	    val lookupResult: Validation[(String,FormError),Option[String]] = 
+	      env.get(lookupName) match {
+		case Some("") => None.success
+		case None     => failure((lookupName, LookupError))
+		case s        => s.success
+	      }
+	    println("lookupResult" + lookupResult)
+	    lookupResult
+	  }
+	  , _.getOrElse(""))
+
+	    /*
+	      env.get(lookupName) match {
+		case Some("") => default.getOrElse("")
+		case Some(s)  => s
+		case _        => None
+	      }	      
+	    println("lookupResult" + lookupResult)
+	    Some(lookupResult ).success[(String,FormError)]
+	    */
+
+	          
   def errorClassView(error: Boolean ) =  "digestive-input" + (if (error) "-error" else "")
 
   val inputTextView = 
@@ -110,7 +134,8 @@ object Html {
       Some(default),
       (name: String, value: String) => ((errors: Map[String,String]) => 
 	<input type="checkbox" name={ name } id={ name } 
-					value={ value } 
+					value="true"
+					checked={ value }
 					class={ errorClassView(false) } />), 
       (env: Map[String,String], lookupName: String) => 
 	addIndexToValidation(
@@ -118,7 +143,8 @@ object Html {
 	  for {
 	    x <- env.get(lookupName).toSuccess[FormError](LookupError);
 	    y <- validationExceptionToValidationFormError(x.parseBoolean)
-	  } yield y)
+	  } yield y),
+      (x:Boolean) => if (x) "yes" else "no"
     )
 
 /*

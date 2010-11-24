@@ -259,7 +259,9 @@ object Formlets {
   def getFormView[A](frm: Form[A]) =
     runFormState(frm, Map(), false)._2
 
-  
+  /**
+   * return a validation showingn either the xml for the view or the result
+   */
   def getFormValidation[A](frm: Form[A], env: Env): Validation[NodeSeq,A] = {
     val (valid, view) = runFormState(frm, env) 
     valid match {
@@ -267,6 +269,13 @@ object Formlets {
       case Failure(x) => failure[NodeSeq,A](view)
     }
   }
+
+  /**
+   * like getFormValidation but returns an Either for callers who do not
+   * want to import scalaz to use  this library
+   */
+  def getFormEither[A](frm: Form[A], env: Env) = 
+    getFormValidation(frm, env).either
 
 	 	 
 }
