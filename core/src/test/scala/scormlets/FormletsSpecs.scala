@@ -119,24 +119,18 @@ object FormletsSpecs extends Specification {
   "checkboxes should be handled correctly" in {
     val form = inputCheckbox("test")
     
-    "input from environment should show up correctly in form" in {
+    "if there is any input for the parameter then the form should return true" in {
       val rslt = runFormState(form, Map("test1" -> "true"))
       println(rslt)
-      rslt._1.isSuccess must beTrue
-      //rslt._1.success.either.right.get must beTrue
-      //getValueForInput("test1", rslt._2) must_== "some text"
-    }
-    /*
-    "default input should be displayed if there is no input" in {
+      rslt._1.either.right.get must_== true
+      (getInput("test1",rslt._2) \ "@checked").text must_== "yes"
+    }    
+    "if there is no input then the form returns false" in {
       val rslt = runFormState(form, Map())
-      rslt._1.isFailure must beTrue
-      //getValueForInput("test1", rslt._2) must_== "default"
-    }
-    "empty string input should override default input" in {
-      val rslt = runFormState(form, Map("test1" -> ""))
       rslt._1.isSuccess must beTrue
-      //getValueForInput("test1", rslt._2) must_== ""
-    }*/
+      rslt._1.either.right.get must_== false
+      (getInput("test1",rslt._2) \ "@checked").text must_== ""
+    }
   }
 
   "for a person form" in {
