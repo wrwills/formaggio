@@ -30,7 +30,6 @@ case class GenericError(msg: String => String) extends FormError {
 object Formlets {
 
   import Scalaz._
-  import FromString._
 
   import scala.xml.NodeSeq
   import scala.xml.Text
