@@ -54,20 +54,41 @@ object SampleData {
   // TODO: check that can handle optional values without having entire form fail
   case class Person(name: FullName, age: Age, married: Boolean, nickname: Option[String], password: String)
 
+  def mkPerson(name: FullName, age: Age, married: Boolean, nickname: Option[String], password: String, terms: Boolean) =
+    Person(name, age, married, nickname, password)
+
   def passwordVerify(x: String)(y: String): Validation[String, String] = 
     if (x == y) x.success[String] else failure[String,String]("passwords don't match")
 
   // TODO: numbering for this is coming out backwards 
   // doesn't matter for now but need to look at ordering of fields using different notations  
-  val passwordValidation = (label("Password") ++> (inputPassword("password") <*> 
-					     (label("Password (verify)") ++> (inputPassword("password"))
-					     ∘ passwordVerify ) ) )
+  val passwordValidation = 
+    ((label("Password") ++> inputPassword("password"))  ⊛ 
+    (label("Password (verify)") ++> (inputPassword("password")))){ passwordVerify(_)(_) }
 
-  val personForm = (labelledFullNameForm ⊛ 
-		    ageForm ⊛ 
-		    ((inputCheckbox("married")) <++ ferrors) ⊛ 
-		    optionalInputText("nickname") ⊛
-		    (validate(passwordValidation) <++ ferrors)
-		  ){Person(_,_,_,_,_)}
+/*
+  val passwordValidation = (label("Password") ++> inputPassword("password")  ⊛ 
+					     (label("Password (verify)") ++> (inputPassword("password"))
+					     ∘ passwordVerify ) ) )*/
+//: Validation[String,Boolean] = 
+  def requireTrue(errorMessage: String)(x: Boolean) =
+    if (x) x.success else failure(errorMessage)
+
+  val termsAndConditions =   
+    validate(label("Do you accept our terms and conditions?:") ++>
+    (inputCheckbox("terms") ∘ requireTrue("You must accept our outrageous terms and conditions!")))
+
+  val personForm = 
+    (
+      (allErrors ++> 
+       labelledFullNameForm <++ br) ⊛ 
+      (ageForm <++ ferrors <++ br) ⊛ 
+      (label("Married:") ++> inputCheckbox("married") <++ br) ⊛ 
+      (label("Nickname:") ++> optionalInputText("nickname") <++ br) ⊛
+      (validate(passwordValidation) <++ ferrors <++ br) ⊛	
+      (termsAndConditions <++ ferrors <++ br)
+    ){ mkPerson(_,_,_,_,_,_) }
+
+
 
 }

@@ -157,36 +157,9 @@ object Formlets {
 	   })
   }
 
-  /*
-  def liftValidForm(rslt: Validation[Exception,A]): ValidForm[A] =
-    rslt match {
-      case Success(x) => x match {
-	      case Success(xx) => success[NonEmptyList[(String,Exception)],A](xx)
-	      case Failure(xy) => failure[NonEmptyList[(String,Exception)],A](
-		NonEmptyList( (s._2.headOption.getOrElse("unknown"), xy ) ))
-	    }
-      case Failure(y) => failure[NonEmptyList[(String,Exception)],A](y)
-    }
-
-  def liftValidForm(rslt: Validation[String,A]): ValidForm[A] =
-    rslt match {
-      case Success(x) => x match {
-	      case Success(xx) => success[NonEmptyList[(String,Exception)],A](xx)
-	      case Failure(xy) => failure[NonEmptyList[(String,Exception)],A](
-		NonEmptyList( (s._2.headOption.getOrElse("unknown"), xy ) ))
-	    }
-      case Failure(y) => failure[NonEmptyList[(String,Exception)],A](y)
-    } */
-
-//  def convertFailure[A](f: Failure[Exception, A]): Failure[NonEmptyList
 
   def validate[A](form: Form[Validation[String,A]]): Form[A] = 
     validate(form, (x:String) => GenericError((_: String) => x) )
-
-  /*
-  def validate[A](form: Form[Validation[Exception,A]]): Form[A] = 
-    validate(form, (x: Exception) => x)
-    */
 
   /**
    * convert a form which returns a validation of A into a form with returns A

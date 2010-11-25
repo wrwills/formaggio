@@ -83,27 +83,26 @@ object Html {
 	          
   def errorClassView(error: Boolean ) =  "digestive-input" + (if (error) "-error" else "")
 
-  val inputTextView = 
+  def inputTextView(password: Boolean) = 
     (name: String, value: String) => 
-      ((errors: Map[String,String]) => 
-	<input type="text" name={ name } id={ name } 
-       value={ value } 
-       class={ errorClassView( errors.contains(name) ) } />) 
-
+      (errors: Map[String,String]) =>
+	<input type={ if (password) "password" else "text" } name={ name } id={ name } value={ value } 
+	 class={ errorClassView( errors.contains(name) ) } />
+     
   def optionalInputText(nname: String = "sc_", default: Option[String] = None): Form[Option[String]] =
-    optionalInput(inputTextView, nname, default)
+    optionalInput(inputTextView(false), nname, default)
 
   def inputText(nname: String = "sc_", default: Option[String] = None, password: Boolean = false): Form[String] =
-    input(nname, default, inputTextView)
+    input(nname, default, inputTextView(password))
 
   def inputTextAreaView(cols: Int, rows: Int)  = 
-    ((name: String, value: String) => 
-      ((errors: Map[String,String]) => 
+    (name: String, value: String) => 
+      (errors: Map[String,String]) => 
 	<textarea  name={ name } id={ name } 
-       class={ errorClassView(errors.contains(name) ) }
-       cols={ cols.toString } rows={ rows.toString } >{ value }</textarea>))
+	  class={ errorClassView(errors.contains(name) ) }
+	  cols={ cols.toString } rows={ rows.toString } >{ value }</textarea>
       
-    def inputTextArea(nname: String = "sc_", cols: Int = 40, rows: Int = 3, default: Option[String] = None): Form[String] =
+  def inputTextArea(nname: String = "sc_", cols: Int = 40, rows: Int = 3, default: Option[String] = None): Form[String] =
       input(nname, default, inputTextAreaView(cols, rows))
 
   def optionalInputTextArea(nname: String = "sc_", default: Option[String] = None, cols: Int = 40, rows: Int = 3): Form[Option[String]] =
@@ -143,31 +142,38 @@ object Html {
       (env: Map[String,String], lookupName: String) => 
 	env.get(lookupName).isDefined.success,
       _.toString
-      //(x:Boolean) => if (x) "yes" else "no"
     )
-/*         
-	addIndexToValidation(
-	  lookupName, 
-	  env.get(lookupName).toSuccess[FormError](LookupError)
-	  for {
-	    x <- env.get(lookupName).toSuccess[FormError](LookupError);
-	    y <- validationExceptionToValidationFormError(x.parseBoolean)
-	  } yield y),
-*/
 
+  /**
+   * add arbitrary html to the form
+   */
+  def htmlE(view: FormState => View): Form[Unit] = 
+    Form(
+      (env: Env) =>  
+	for {s <- init[FormState]} yield (success(()), view(s)) 
+    )
+  
+  def htmlV(view: View) =
+    htmlE( (s:FormState) => view )
+
+  def html(n: FormState => NodeSeq): Form[Unit] = 
+    htmlE( (s:FormState) => (errors: Map[String,String]) => n(s) )
+/*
+    Form(
+      (env: Env) =>  
+	for {s <- init[FormState]} yield 
+	  (success(()), (errors: Map[String,String]) => n(s)))
+*/
+  def html(n: NodeSeq): Form[Unit] = html((_:FormState) => n)
+    
   /**
    * add an html5 label to the left of an input
    * the for attribute will use the id of the input to the right
    */
   def label(name: String): Form[Unit] = 
-    Form(
-      (env: Env) =>  
-	for {s <- init[FormState]} yield 
-	  {
-	    val lab = 
-	      (errors: Map[String,String]) => <label for={ s._2.headOption.getOrElse("unknown") } class="scormlets-label">{ name }</label>
-	    ( success(()),  lab )
-	  })
+    html((s:FormState) => <label for={ s._2.headOption.getOrElse("unknown") } class="scormlets-label">{ name }</label>)
+
+  def br = html(<br/>)
 
 
   /**
@@ -188,9 +194,7 @@ object Html {
 			er    <- errors.get(field)
 		      } yield (field,er)
 		 if (errorsForRange.size > 0)
-		   <ul class="scormlets-errors">{ 
-		     errorsForRange map ((e:(String,String)) => (<li id={e._1}>{ e._2 }</li>))
-		   }</ul>
+		   errorHtml(errorsForRange)
 		 else 
 		   Text("")
 	       }
@@ -198,4 +202,18 @@ object Html {
 	   }
     )
 
+  def errorHtml(errors: Seq[(String,String)]) =
+    <ul class="scormlets-errors">{ 
+      errors map ((e:(String,String)) => (<li id={e._1}>{ e._2 }</li>))
+    }</ul>
+    
+  def allErrors = 
+    htmlV(
+      (errors: Map[String,String]) => 
+	if (errors.size > 0) 
+	  <h1>Errors:</h1> ++  errorHtml(errors.toSeq)
+	else
+	  Text(""))
+	  
+ 
 }

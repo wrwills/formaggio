@@ -133,6 +133,13 @@ object FormletsSpecs extends Specification {
     }
   }
 
+  "required checkboxes should be handled correctly" in {
+    val form = termsAndConditions
+    "if there is any input for the parameter then the form should return true" in {
+      val rslt = runFormState(form, Map("test1" -> "true"))
+    }
+  }
+
   "for a person form" in {
     val form = personForm
 
@@ -141,8 +148,9 @@ object FormletsSpecs extends Specification {
 	"name1"-> "Jim", 
 	"name2" -> "Bob", 
 	"age3" -> "30",
+	"nickname5" -> "Jimbo",
 	"password7" -> "password",
-	"password6" -> "password"				     
+	"password6" -> "password"
       )
 
 
