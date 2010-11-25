@@ -5,6 +5,15 @@ import scalaz._
 
 /**
  * keep these in core so they can be reused across sample apps and testing
+ *
+ * NB:  scalaz provides unicode operators which define common methods for higher order types
+ *      In the interest of not scaring of potential users who just want to use this library
+ *      without getting deeply into scalaz I have chosen to use the ascii equivalents here
+ * 
+ * For those who prefer the unicode operators the relevant conversions are:     
+ *    map -> ∘
+ *    |@| -> ⊛
+ * 
  */
 object SampleData {
   import Scalaz._
@@ -24,13 +33,13 @@ object SampleData {
   case class FullName(first: Name, second: Name)
   case class FullName2(first: String, second: String)
 
-  val myForm = (inputText("first") ⊛ inputText("last")){FullName2(_,_)}
-  val myNameForm: Form[Name] = validate(inputText("name") ∘ Name.apply )
-  val fullNameForm = (myNameForm  ⊛ myNameForm){  FullName(_,_) }
+  val myForm = (inputText("first") |@| inputText("last")){FullName2(_,_)}
+  val myNameForm: Form[Name] = validate(inputText("name") map Name.apply )
+  val fullNameForm = (myNameForm  |@| myNameForm){  FullName(_,_) }
 
-  def labelledNameForm(s: String) =  validate(label(s) ++> (inputText("name", Some("Billy")) ∘ Name.apply))
+  def labelledNameForm(s: String) =  validate(label(s) ++> (inputText("name", Some("Billy")) map Name.apply))
 
-  val labelledFullNameForm = (labelledNameForm("First")  ⊛ labelledNameForm("Second")){ FullName(_,_) } <++ ferrors
+  val labelledFullNameForm = (labelledNameForm("First")  |@| labelledNameForm("Second")){ FullName(_,_) } <++ ferrors
 
   sealed trait Age extends NewType[Int]
   object Age {
@@ -49,7 +58,7 @@ object SampleData {
 
   }
 
-  val ageForm = validate(label("Age") ++> (inputText("age") ∘ Age.apply))
+  val ageForm = validate(label("Age") ++> (inputText("age") map Age.apply))
 
   // TODO: check that can handle optional values without having entire form fail
   case class Person(name: FullName, age: Age, married: Boolean, nickname: Option[String], password: String)
@@ -63,29 +72,29 @@ object SampleData {
   // TODO: numbering for this is coming out backwards 
   // doesn't matter for now but need to look at ordering of fields using different notations  
   val passwordValidation = 
-    ((label("Password") ++> inputPassword("password"))  ⊛ 
+    ((label("Password") ++> inputPassword("password")) |@| 
     (label("Password (verify)") ++> (inputPassword("password")))){ passwordVerify(_)(_) }
 
 /*
-  val passwordValidation = (label("Password") ++> inputPassword("password")  ⊛ 
+  val passwordValidation = (label("Password") ++> inputPassword("password")  |@| 
 					     (label("Password (verify)") ++> (inputPassword("password"))
-					     ∘ passwordVerify ) ) )*/
+					     map passwordVerify ) ) )*/
 //: Validation[String,Boolean] = 
   def requireTrue(errorMessage: String)(x: Boolean) =
     if (x) x.success else failure(errorMessage)
 
   val termsAndConditions =   
     validate(label("Do you accept our terms and conditions?:") ++>
-    (inputCheckbox("terms") ∘ requireTrue("You must accept our outrageous terms and conditions!")))
+    (inputCheckbox("terms") map requireTrue("You must accept our outrageous terms and conditions!")))
 
   val personForm = 
     (
       (allErrors ++> 
-       labelledFullNameForm <++ br) ⊛ 
-      (ageForm <++ ferrors <++ br) ⊛ 
-      (label("Married:") ++> inputCheckbox("married") <++ br) ⊛ 
-      (label("Nickname:") ++> optionalInputText("nickname") <++ br) ⊛
-      (validate(passwordValidation) <++ ferrors <++ br) ⊛	
+       labelledFullNameForm <++ br) |@| 
+      (ageForm <++ ferrors <++ br) |@| 
+      (label("Married:") ++> inputCheckbox("married") <++ br) |@| 
+      (label("Nickname:") ++> optionalInputText("nickname") <++ br) |@|
+      (validate(passwordValidation) <++ ferrors <++ br) |@|	
       (termsAndConditions <++ ferrors <++ br)
     ){ mkPerson(_,_,_,_,_,_) }
 
