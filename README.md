@@ -53,9 +53,7 @@ This is not meant to be a web framework.  It is concerned solely with form handl
 
 ## TODO: ##
 
-I am still learning to get to grips with Scalaz so I'm sure there are many areas
-in which this package can be improved:
-
+ * I am still learning to get to grips with Scalaz so I'm sure there are alot of places where the code could be cleaned up
  * look at using ReaderT for the environment
  * handle file uploads
  * handle radio, multiple checkboxes, drop down selects
