@@ -40,7 +40,9 @@ class MyScalatraFilter extends ScalatraFilter with ScalateSupport {
   post ("/registration") {
     <html>
       <body>
-        <h1>Registration</h1> {
+        <h1>Registration</h1> 
+	<h2>Params: { params }</h2>
+    {
 	  getFormValidation(personForm, params.iterator.toMap) match {
 	    case Success(s) => 
 	      <h3>Congratulations!</h3>

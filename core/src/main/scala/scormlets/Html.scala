@@ -31,13 +31,17 @@ object Html {
 	     ns <- modify((x: (FormState)) => (x._1 + 1, lookupName :: x._2))
 	   } yield {
 	     val valid: Validation[(String,FormError),A] = validLookup(env, lookupName)
-	     (valid.liftFailNel, view(lookupName, 
-				      valid match { 
-					case Success(s) => stringRepresentation(s)
-					// empty strings in environment override default input
-					case Failure((_,EmptyStringError)) => ""
-					case Failure(_) => default.map(_.toString).getOrElse("")
-				      } ) )
+	     println("valid:" + valid + "; default: " + default)
+	     (valid.liftFailNel, 
+	      view(lookupName, 
+		   valid match { 
+		     case Success(s) => stringRepresentation(s)
+		     // empty strings in environment override default input
+		     case Failure((_,EmptyStringError)) => ""
+		     case Failure(_) => default.map(stringRepresentation(_)).getOrElse("")
+		   } 
+		 ) 
+	    )
 	   })
   
   /*
@@ -63,7 +67,7 @@ object Html {
    * empty strings in the lookup environment yield Some("")
    */
   def optionalInput(view: (String,String) => View, name: String = "sc_", default: Option[String]): Form[Option[String]] =
-    input(name, None, view, 
+    input(name, Some(default), view, 
 	  (env: Map[String,String], lookupName: String) => {
 	    println("optional input lookup" + env.get(lookupName))
 	    val lookupResult: Validation[(String,FormError),Option[String]] = 
@@ -76,17 +80,6 @@ object Html {
 	    lookupResult
 	  }
 	  , _.getOrElse(""))
-
-	    /*
-	      env.get(lookupName) match {
-		case Some("") => default.getOrElse("")
-		case Some(s)  => s
-		case _        => None
-	      }	      
-	    println("lookupResult" + lookupResult)
-	    Some(lookupResult ).success[(String,FormError)]
-	    */
-
 	          
   def errorClassView(error: Boolean ) =  "digestive-input" + (if (error) "-error" else "")
 
@@ -127,39 +120,41 @@ object Html {
       case Failure(f) => failure(ExceptionTo(f))
     }
 
-
-  def inputCheckbox(nname: String = "sc_", default: Boolean = false): Form[Boolean] =
+  /**
+   * there is no point having checkboxes default to anything but false
+   * this is because if a checkbox is not checked no values comes back in the post parameters
+   * and it is therefore impossible to distinguish between the box having been set to false
+   * and no values being there at all: ie if you set a checkbox to default to true it will
+   * always be redisplayed checked
+   */
+  def inputCheckbox(nname: String = "sc_"): Form[Boolean] = 
     input(
       nname,
-      Some(default),
-      (name: String, value: String) => ((errors: Map[String,String]) => 
-	<input type="checkbox" name={ name } id={ name } 
-					value="true"
-					checked={ value }
-					class={ errorClassView(false) } />), 
+      Some(false),
+      (name: String, value: String) => ((errors: Map[String,String]) => {
+	val input = 
+	  <input type="checkbox" name={ name } id={ name } value="true"
+	    class={ errorClassView(false) } />
+	if (value == "true") 
+	  input.copy(attributes = input.attributes.append(new UnprefixedAttribute("checked", "yes", Null)))
+	else
+	  input
+      }), 
       (env: Map[String,String], lookupName: String) => 
+	env.get(lookupName).isDefined.success,
+      _.toString
+      //(x:Boolean) => if (x) "yes" else "no"
+    )
+/*         
 	addIndexToValidation(
 	  lookupName, 
+	  env.get(lookupName).toSuccess[FormError](LookupError)
 	  for {
 	    x <- env.get(lookupName).toSuccess[FormError](LookupError);
 	    y <- validationExceptionToValidationFormError(x.parseBoolean)
 	  } yield y),
-      (x:Boolean) => if (x) "yes" else "no"
-    )
-
-/*
-	liftExceptionValidation(for {
-	  x <- env.get(lookupName).toSuccess[FormError](LookupError);
-	  y <- validationExceptionToValidationFormError(x.parseBoolean)
-	} yield y)
 */
-/*
-    Validation[
-FormException {
-    val value = e
-  } */
 
-         
   /**
    * add an html5 label to the left of an input
    * the for attribute will use the id of the input to the right
