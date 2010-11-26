@@ -120,13 +120,15 @@ object Formlets {
       new Form[A]{ val value = fn }
   }
 
+
+
   implicit def FormPure: Pure[Form] = new Pure[Form] {
     def pure[A](a: => A) =
       Form((env: Env) => 
 	for {s <- init[FormState]} 
-	yield (success(a), (errors: Map[String,String]) => Text("")))
+	yield (a.success, (errors: Map[String,String]) => Text("")))
   }
-
+  /*
   implicit def FormFunctor: Functor[Form] = new Functor[Form] {
     def fmap[A, B](r: Form[A], f: A => B): Form[B] = 
       Form((env: Env) => 
@@ -136,8 +138,17 @@ object Formlets {
 	     case (Success(a),view) => (success(f(a)),view)
 	     case (Failure(e),view) => (failure(e),view)
 	   })
-   }	   
+   }*/	   
+  
+  implicit def FormFunctor: Functor[Form] = new Functor[Form] {
+    def fmap[A, B](r: Form[A], f: A => B): Form[B] = 
+      Form((env: Env) => 
+	for {
+	     rslt <-r.value(env) 
+	   } yield (rslt._1 map f, rslt._2))
+  }
 
+  /*
   implicit def FormApply: Apply[Form] = new Apply[Form] {
     def apply[A,B](f: => Form[A => B], a: => Form[A]): Form[B] = 
       Form(
@@ -154,7 +165,23 @@ object Formlets {
 	     }
 	     (valid, frslt._2 ⊹ arslt._2)
 	   })
+  } */
+
+  implicit def FormApply: Apply[Form] = new Apply[Form] {
+    def apply[A,B](f: => Form[A => B], a: => Form[A]): Form[B] = 
+      Form(
+	(env: Env) =>
+	  for {
+	    frslt <- f.value(env)
+	    arslt <- a.value(env)
+	  } yield (arslt._1 <*> frslt._1, frslt._2 ⊹ arslt._2))
   }
+  /*
+  implicit def FormApply: Apply[Form] = new Apply[Form] {
+    def apply[A,B](f: => Form[A => B], a: => Form[A]): Form[B] = 
+      Form(
+	(env: Env) => a.value(env) <*> f.value(env))
+  }*/
 
 
   def validate[A](form: Form[Validation[String,A]]): Form[A] = 
