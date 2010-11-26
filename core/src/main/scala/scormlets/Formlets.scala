@@ -43,34 +43,20 @@ object Formlets {
     val value = e
   } 
 
-  //def liftFormErrorValidationToFormValidation[A](v: Validation[FormError,A]): 
-
   def addIndexToValidation[A](i: String, v: Validation[FormError,A]): Validation[(String,FormError),A] =
     v match {
       case Success(s) => s.success
       case Failure(f) => failure(i, f)
     }     
   
-  //case class LookupException(e: String) extends Exception(e)
-  
   def liftExceptionValidation[A](v: Validation[Exception,A]): Validation[(String,Exception),A] =
     v match {
       case Success(s) => s.success[(String,Exception)]
       case Failure(f) => failure[(String,Exception),A]("", f)
     } 
-  /*
-    v match {
-      case Success(s) => success[(String,String),A](s)
-      case Failure(f) => f match {
-	case LookupException =>  failure[(String,String),A](e, " can not be empty")
-	case _                =>  failure[(String,String),A]("", f.toString)
-      }
-    } */
 
   type Errors = Map[String,String]
-  //type Errors = Map[String,Exception]
   type Env = Map[String, String] // worry about files later
-  //type ValidForm[A] = Validation[NonEmptyList[(String,String)],A]
   type ValidForm[A] = Validation[NonEmptyList[(String,FormError)],A]
 
   // form state is an integer showing the number of the last input together 
@@ -120,52 +106,19 @@ object Formlets {
       new Form[A]{ val value = fn }
   }
 
-
-
   implicit def FormPure: Pure[Form] = new Pure[Form] {
     def pure[A](a: => A) =
       Form((env: Env) => 
 	for {s <- init[FormState]} 
 	yield (a.success, (errors: Map[String,String]) => Text("")))
   }
-  /*
-  implicit def FormFunctor: Functor[Form] = new Functor[Form] {
-    def fmap[A, B](r: Form[A], f: A => B): Form[B] = 
-      Form((env: Env) => 
-	for {s <- init[FormState];
-	     rslt <-r.value(env) 
-	   } yield rslt  match {
-	     case (Success(a),view) => (success(f(a)),view)
-	     case (Failure(e),view) => (failure(e),view)
-	   })
-   }*/	   
   
   implicit def FormFunctor: Functor[Form] = new Functor[Form] {
     def fmap[A, B](r: Form[A], f: A => B): Form[B] = 
       Form((env: Env) => 
-	for {
-	     rslt <-r.value(env) 
-	   } yield (rslt._1 map f, rslt._2))
+	for { rslt <-r.value(env) } 
+	yield (rslt._1 map f, rslt._2))
   }
-
-  /*
-  implicit def FormApply: Apply[Form] = new Apply[Form] {
-    def apply[A,B](f: => Form[A => B], a: => Form[A]): Form[B] = 
-      Form(
-	(env: Env) =>
-	for {s <- init[FormState];
-	     frslt <- f.value(env); 
-	     arslt <- a.value(env)
-	   } yield {
-	     val valid = (frslt._1,arslt._1)  match {
-	       case (Success(x),Success(y)) => success(x(y))
-	       case (Success(x),Failure(y)) => failure(y)
-	       case (Failure(x),Success(y)) => failure(x)
-	       case (Failure(x),Failure(y)) => failure(x ⊹ y)
-	     }
-	     (valid, frslt._2 ⊹ arslt._2)
-	   })
-  } */
 
   implicit def FormApply: Apply[Form] = new Apply[Form] {
     def apply[A,B](f: => Form[A => B], a: => Form[A]): Form[B] = 
@@ -176,17 +129,10 @@ object Formlets {
 	    arslt <- a.value(env)
 	  } yield (arslt._1 <*> frslt._1, frslt._2 ⊹ arslt._2))
   }
-  /*
-  implicit def FormApply: Apply[Form] = new Apply[Form] {
-    def apply[A,B](f: => Form[A => B], a: => Form[A]): Form[B] = 
-      Form(
-	(env: Env) => a.value(env) <*> f.value(env))
-  }*/
-
 
   def validate[A](form: Form[Validation[String,A]]): Form[A] = 
     validate(form, (x:String) => GenericError((_: String) => x) )
-
+  
   /**
    * convert a form which returns a validation of A into a form with returns A
    * ie lift the validation of A into the form validation
@@ -194,79 +140,46 @@ object Formlets {
   def validate[A,B](form: Form[Validation[B,A]], convertFailure: B => FormError): Form[A] = 
     Form(
       (env: Env) =>
-	for {
-	  frslt <- form.value(env) 
-	  s <- init[FormState]
-	} yield {
-	  val valid: ValidForm[A] = frslt._1 match {
-	    case Success(x) => x match {
-	      case Success(xx) => success(xx)
-	      case Failure(xy) => {
-		val convertedFailure = xy match {
-		  case e: Exception => e
-		  case _            => GenericError((_: String) => xy.toString)
-		}
-		failure[(String,FormError),A](s._2.headOption.getOrElse("unknown"), convertFailure(xy)).liftFailNel
-	      }}
-	    case Failure(y) => failure(y)
-	  }
-	  (valid, frslt._2)
-	}
+        for {
+          frslt <- form.value(env) 
+          s <- init[FormState]
+        } yield (
+	  frslt._1.fold(
+	    _.fail[A],
+	    _.fail.map( 
+	      f => (s._2.headOption.getOrElse("unknown"), convertFailure(f)) ).validation.liftFailNel ),
+	  frslt._2)
     )
 
-							   /*
-  def validate[A](form: Form[Validation[Any,A]]): Form[A] = 
-    Form(
-      (env: Env) =>
-	for {
-	  frslt <- form.value(env) 
-	  s <- init[FormState]
-	} yield {
-	  val valid: ValidForm[A] = frslt._1 match {
-	    case Success(x) => x match {
-	      case Success(xx) => success[NonEmptyList[(String,Exception)],A](xx)
-	      case Failure(xy) => {
-		val convertedFailure = xy match {
-		  case e: Exception => e
-		  case _            => GenericError(xy.toString)
-		}		
-		failure[NonEmptyList[(String,Exception)],A](
-		  NonEmptyList( (s._2.headOption.getOrElse("unknown"), convertedFailure ) ))
-	      }}
-	    case Failure(y) => failure[NonEmptyList[(String,Exception)],A](y)
-	  }
-	  (valid, frslt._2)
-	}
-    )*/
-
-  //def errorToString(i: String, e: Exception) =
-    
-  
+  def convertErrorToErrorMessage(x: (String,FormError)) = (x._1, x._2.getErrorMessage(x._1))
+     
+  /**
+   * run a form within an environment
+   */
   def runFormState[A](frm: Form[A], env: Env, showErrors: Boolean = true) = {
     val (valid,view) = (frm.value(env)) ! (0,List[String]())
-    val errors: Errors = valid match {
-      case Success(_) => Map()
-      case Failure(x) => 
-	if (showErrors) 
-	  x.list.map((x: (String,FormError)) => (x._1, x._2.getErrorMessage(x._1))).toMap 
-	else 
-	  Map()
-    }
+    val errors: Errors = 
+      if (showErrors)
+	valid.fail.map(
+	  _.list.map( convertErrorToErrorMessage(_) ).toMap
+	).toOption.getOrElse(Map())
+      else
+	Map()
     (valid, view(errors))
   }
 
+  /**
+   * get the view the form without any errors displayed
+   */
   def getFormView[A](frm: Form[A]) =
     runFormState(frm, Map(), false)._2
 
   /**
-   * return a validation showingn either the xml for the view or the result
+   * return a validation showing either the xml for the view or the result
    */
   def getFormValidation[A](frm: Form[A], env: Env): Validation[NodeSeq,A] = {
     val (valid, view) = runFormState(frm, env) 
-    valid match {
-      case Success(a) => success[NodeSeq,A](a)
-      case Failure(x) => failure[NodeSeq,A](view)
-    }
+    valid.fail.map(_ => view).validation
   }
 
   /**
@@ -275,7 +188,6 @@ object Formlets {
    */
   def getFormEither[A](frm: Form[A], env: Env) = 
     getFormValidation(frm, env).either
-
 	 	 
 }
 
