@@ -6,7 +6,8 @@ import scalaz._
  * Html5 renderings of form components using scala.xml
  *
  * TODO:
- * - allow optional default values
+ * - radios
+ * - selects
  * - mass input
  * - file upload
  */
@@ -18,7 +19,8 @@ object Html {
 
 
   /**
-   *
+   * base method for adding an input
+   * adding an input causes the form state to be modified
    */
   def input[A](name: String, default: Option[A], view: (String,String) => View,
 	  validLookup: (Map[String,String], String) => Validation[(String,FormError),A],
@@ -31,17 +33,16 @@ object Html {
 	     ns <- modify((x: (FormState)) => (x._1 + 1, lookupName :: x._2))
 	   } yield {
 	     val valid: Validation[(String,FormError),A] = validLookup(env, lookupName)
-	     println("valid:" + valid + "; default: " + default)
 	     (valid.liftFailNel, 
 	      view(lookupName, 
-		   valid match { 
-		     case Success(s) => stringRepresentation(s)
-		     // empty strings in environment override default input
-		     case Failure((_,EmptyStringError)) => ""
-		     case Failure(_) => default.map(stringRepresentation(_)).getOrElse("")
-		   } 
+		   valid.fold(
+		     _ match {
+		       // empty strings in the environment override default input
+		       case (_,EmptyStringError) => ""
+		       case  _ => default.map(stringRepresentation(_)).getOrElse("")
+		     }, stringRepresentation(_))
 		 ) 
-	    )
+	    ) 
 	   })
   
   /*
@@ -54,7 +55,6 @@ object Html {
   def input(name: String = "sc_", default: Option[String], view: (String,String) => View): Form[String] =
     input(name, default, view, 
 	  (env: Map[String,String], lookupName: String) => 
-	    //env.getOrElse(lookupName, "") match {
 	    env.get(lookupName) match {
 	      case Some("") => failure[(String,FormError),String]((lookupName, EmptyStringError))
 	      case None => failure[(String,FormError),String]((lookupName, LookupError))
@@ -69,14 +69,12 @@ object Html {
   def optionalInput(view: (String,String) => View, name: String = "sc_", default: Option[String]): Form[Option[String]] =
     input(name, Some(default), view, 
 	  (env: Map[String,String], lookupName: String) => {
-	    println("optional input lookup" + env.get(lookupName))
 	    val lookupResult: Validation[(String,FormError),Option[String]] = 
 	      env.get(lookupName) match {
 		case Some("") => None.success
 		case None     => failure((lookupName, LookupError))
 		case s        => s.success
 	      }
-	    println("lookupResult" + lookupResult)
 	    lookupResult
 	  }
 	  , _.getOrElse(""))
@@ -158,12 +156,7 @@ object Html {
 
   def html(n: FormState => NodeSeq): Form[Unit] = 
     htmlE( (s:FormState) => (errors: Map[String,String]) => n(s) )
-/*
-    Form(
-      (env: Env) =>  
-	for {s <- init[FormState]} yield 
-	  (success(()), (errors: Map[String,String]) => n(s)))
-*/
+
   def html(n: NodeSeq): Form[Unit] = html((_:FormState) => n)
     
   /**
