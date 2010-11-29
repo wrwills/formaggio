@@ -6,10 +6,12 @@ import scalaz._
  * Html5 renderings of form components using scala.xml
  *
  * TODO:
+ * - hidden
  * - radios
  * - selects
  * - mass input
  * - file upload
+ * - recaptcha?
  */
 
 object Html {
@@ -81,17 +83,18 @@ object Html {
 	          
   def errorClassView(error: Boolean ) =  "digestive-input" + (if (error) "-error" else "")
 
-  def inputTextView(password: Boolean) = 
+  def inputTextView(inputType: String = "text") = 
     (name: String, value: String) => 
       (errors: Map[String,String]) =>
-	<input type={ if (password) "password" else "text" } name={ name } id={ name } value={ value } 
+	<input type={ inputType } name={ name } id={ name } value={ value } 
 	 class={ errorClassView( errors.contains(name) ) } />
+
      
   def optionalInputText(nname: String = "sc_", default: Option[String] = None): Form[Option[String]] =
-    optionalInput(inputTextView(false), nname, default)
+    optionalInput(inputTextView(), nname, default)
 
-  def inputText(nname: String = "sc_", default: Option[String] = None, password: Boolean = false): Form[String] =
-    input(nname, default, inputTextView(password))
+  def inputText(nname: String = "sc_", default: Option[String] = None, inputType: String = "text"): Form[String] =
+    input(nname, default, inputTextView(inputType))
 
   def inputTextAreaView(cols: Int, rows: Int)  = 
     (name: String, value: String) => 
@@ -107,15 +110,20 @@ object Html {
     optionalInput(inputTextAreaView(cols, rows), nname, default)
 
   def inputPassword(nname: String = "sc_", default: Option[String] = None): Form[String] =
-    inputText(nname, default, true)
+    inputText(nname, default, "password")
+
+  // hidden input: default value is not optional
+  def hidden(nname: String = "sc_", default: String) =
+    inputText(nname, Some(default), "hidden")
+  
 
   /*
-  implicit */
+  implicit 
   def validationExceptionToValidationFormError[A](e: Validation[Exception,A]): Validation[FormError,A] =
     e match {
       case Success(s) => success(s)
       case Failure(f) => failure(ExceptionTo(f))
-    }
+    }*/
 
   /**
    * there is no point having checkboxes default to anything but false
@@ -142,6 +150,66 @@ object Html {
       _.toString
     )
 
+  // todo:
+  // def checkboxChoice(nname: String = "sc_"): Form[Boolean] = 
+
+  /*
+   * 
+   * 2nd part of options  should be unique and non-empty strings
+   * todo: layout options - how many columns?
+   */
+  def mkCheckedInputs(ttype: String, name: String, options: Seq[(String, String)], selectedValue: String): Seq[NodeSeq] = {
+    def mkInput( iname: String) = {
+      val input =
+	<input type={ ttype } name={ name } id={ iname } value={ iname }/>
+      if (iname == selectedValue)
+	input.copy(attributes = input.attributes.append(new UnprefixedAttribute("checked", "yes", Null)))
+      else
+	input
+    }	
+    options.map( (x: (String,String)) => labelHtml(x._2, x._1) ++ mkInput( x._2 ) )
+  } 
+    
+
+  /*
+   * radio choice -- only one is selected
+   * todo: look at differences between html4 and html5 for this
+   * 2nd part of options  should be unique
+   */  
+  def radio2(nname: String, options: Seq[(String,String)], default: Option[String]): Form[String] = 
+    input(
+      nname,
+      default,
+      (name: String, value: String) => 
+	((errors: Map[String,String]) =>
+	  mkCheckedInputs("radio", nname, options, value).flatten ) )
+
+  // a radio choice  
+  
+  def radio(nname: String = "sc_", options: Seq[String], default: Option[String]): Form[String] =
+    radio2(nname, options.map(x => (x, x)), default ) 
+// do we really need to lowercase, etc?
+//    radio2(nname, options.map(x => (x, x.toLowerCase.replace(' ', '_')) ), default )
+
+  /*
+  def validateEnumeration[A < Enumeration](x: A, v: String): Validation[String,A] =
+    try {
+      x.withName(v).success
+    } catch {
+      case e: failure("no such element " + v  + " in enumeration")
+    } */
+
+/*
+{
+    val labels = options.map( label(_._1)(List(_._2)) )
+    val radios = options.map( <input type="radio" name={ name } id={ _._2 } value={ _._2 }/> )
+
+    //val radios = labels.map( <label for={ _._2 }>{ _._1 }</label><
+    (name: String, value: String) => ((errors: Map[String,String]) => {
+      val html = mkCheckedInputs("radio", nname, options, value)w
+      
+  }*/    
+
   /**
    * add arbitrary html to the form
    */
@@ -164,7 +232,12 @@ object Html {
    * the for attribute will use the id of the input to the right
    */
   def label(name: String): Form[Unit] = 
-    html((s:FormState) => <label for={ s._2.headOption.getOrElse("unknown") } class="scormlets-label">{ name }</label>)
+    html((s:FormState) => labelHtml(s._2.headOption.getOrElse("unknown"), name))
+
+//<label for={ s._2.headOption.getOrElse("unknown") } class="scormlets-label">{ name }</label>)
+
+  def labelHtml(forr: String, name: String) =
+    <label for={ forr } class="scormlets-label">{ name }</label>
 
   def br = html(<br/>)
 

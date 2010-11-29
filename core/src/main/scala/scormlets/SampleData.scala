@@ -60,11 +60,29 @@ object SampleData {
 
   val ageForm = validate(label("Age") ++> (inputText("age") map Age.apply))
 
-  // TODO: check that can handle optional values without having entire form fail
-  case class Person(name: FullName, age: Age, married: Boolean, nickname: Option[String], password: String)
+  object FavouriteFood extends Enumeration {
+    type FavouriteFood = Value
+    val GreenEggs, Ham = Value
+  }
 
-  def mkPerson(name: FullName, age: Age, married: Boolean, nickname: Option[String], password: String, terms: Boolean) =
-    Person(name, age, married, nickname, password)
+  // TODO: check that can handle optional values without having entire form fail
+  case class Person(
+    name: FullName, age: Age, married: Boolean, nickname: Option[String], 
+    password: String, favourites: Favourites)
+
+  import FavouriteFood._
+
+  case class Favourites(food: Option[FavouriteFood], things: Seq[String])
+
+  val noFavourites = Favourites(None, Seq())
+
+
+
+  val favouritesForm = radio("food", Seq("GreenEggs", "Ham"), None) map ((x:String) => FavouriteFood.withName(x))
+    
+
+  def mkPerson(name: FullName, age: Age, married: Boolean, nickname: Option[String], password: String, terms: Boolean, favourites: Favourites) =
+    Person(name, age, married, nickname, password, favourites)
 
   def passwordVerify(x: String)(y: String): Validation[String, String] = 
     if (x == y) x.success[String] else failure[String,String]("passwords don't match")
@@ -96,7 +114,7 @@ object SampleData {
       (label("Nickname:") ++> optionalInputText("nickname") <++ br) |@|
       (validate(passwordValidation) <++ ferrors <++ br) |@|	
       (termsAndConditions <++ ferrors <++ br)
-    ){ mkPerson(_,_,_,_,_,_) }
+    ){ mkPerson(_,_,_,_,_,_, noFavourites) }
 
 
 
