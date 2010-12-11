@@ -72,14 +72,15 @@ object SampleData {
 
   import FavouriteFood._
 
-  case class Favourites(food: Option[FavouriteFood], things: Seq[String])
+  case class Favourites(food: FavouriteFood, things: Seq[String])
 
-  val noFavourites = Favourites(None, Seq())
+  val noFavourites = Favourites(GreenEggs, Seq())
 
 
 
-  val favouritesForm = radio("food", Seq("GreenEggs", "Ham"), None) map ((x:String) => FavouriteFood.withName(x))
-    
+  val favouritesForm1 = radio("food", Seq("GreenEggs", "Ham"), None) map ((x:String) => FavouriteFood.withName(x))
+  
+  //val favouritesForm = (label("Favourite food:") ++> radioEnumeration(FavouriteFood.values)){ Favourites((_:FavouriteFood),Seq()) }
 
   def mkPerson(name: FullName, age: Age, married: Boolean, nickname: Option[String], password: String, terms: Boolean, favourites: Favourites) =
     Person(name, age, married, nickname, password, favourites)
@@ -113,8 +114,8 @@ object SampleData {
       (label("Married:") ++> inputCheckbox("married") <++ br) |@| 
       (label("Nickname:") ++> optionalInputText("nickname") <++ br) |@|
       (validate(passwordValidation) <++ ferrors <++ br) |@|	
-      (termsAndConditions <++ ferrors <++ br)
-    ){ mkPerson(_,_,_,_,_,_, noFavourites) }
+      (termsAndConditions <++ ferrors <++ br)      
+    ){ mkPerson(_,_,_,_,_,_,noFavourites) }
 
 
 

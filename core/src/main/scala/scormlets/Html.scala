@@ -188,6 +188,21 @@ object Html {
   
   def radio(nname: String = "sc_", options: Seq[String], default: Option[String]): Form[String] =
     radio2(nname, options.map(x => (x, x)), default ) 
+
+  def toEnumerationValue[A](vals: Set[A], errorMessage: String): String => Validation[String,A] =
+    (str: String) =>
+      vals.toSeq.filter( _.toString != "Value").filter(_.toString == str).headOption.toSuccess(errorMessage)
+
+  def radioEnumeration[A](vals: Set[A], nname: String = "sc_"): Form[A] = 
+    validate(
+      radio(nname + "enum", vals.toSeq.map(_.toString), vals.headOption.map(_.toString)) ∘ 
+      toEnumerationValue(vals, "not in enumeration"))
+
+  //import scala.{ValueSet,Value}
+
+  //def radio[A <: Enumeration](nname: String = "sc_", options: Set[A], default: Option[A.Value]) = 
+  //  radio2(nname, options.map(_.toString).filter(_ != "Value"), default.map(_.toString) )
+
 // do we really need to lowercase, etc?
 //    radio2(nname, options.map(x => (x, x.toLowerCase.replace(' ', '_')) ), default )
 
