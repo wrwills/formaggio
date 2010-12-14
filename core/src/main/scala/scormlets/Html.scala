@@ -226,21 +226,36 @@ object Html {
    * a formlet for inputting lists of things
    * : Form[Seq[A]] = 
    */
-  def massInput[A](formlet: Form[A], 
-		   itemWrapper: NodeSeq => NodeSeq, 
-		   listWrapper: NodeSeq => NodeSeq, default: Seq[A]): Form[Seq[A]] =
-    Form(
-      (env: Env) =>  
-	for {
-	  s <- init[FormState];
-	  _ <- put( (s._1 * 100, List[String]()) );
-	  val mI = ((1 until 3) map ( _ => formlet)) sequence;
-	  ns <- modify( (x: FormState) => (s._1 + 1, x._2 ++ s._2) )
-	} yield {
-	  //val frm = mI(env)
-	  val frm = mI(env) ! (100, List())
-	  frm
-	})
+  def massInput[A](formlet: Form[A], default: Seq[A],
+		   itemWrapper: (NodeSeq => NodeSeq) = (x: NodeSeq) => <li>{ x }</li>, 
+		   listWrapper: (NodeSeq => NodeSeq) = (x: NodeSeq) => <ul>{ x }</ul>): Form[Seq[A]] = {
+    val frm: Form[Seq[A]] =
+      Form(
+	(env: Env) =>  
+	  for {
+	    s <- init[FormState];
+	    val ns = (s._1 * 100, List[String]());
+	    _ <- put(ns);
+	    val lngth: Int = checkEnvironmentForMassInput(formlet, env, ns);
+	    val mI = ((0 until lngth + 1) map ( _ => formlet.plug(itemWrapper))) sequence;
+	    nns <- modify( (x: FormState) => (s._1 + 1, x._2 ++ s._2) )
+	  } yield {
+	    val frm = mI(env) ! ns
+	    frm
+	  })
+    frm.plug(listWrapper)
+  }
+
+  def checkEnvironmentForMassInput[A](formlet: Form[A], env: Env, state: FormState): Int = {
+    val nState = formlet(env)(state)
+    nState._2._1.fail.map( _.list.filter(_._2 == LookupError).headOption).validation match {
+      case Failure(Some(_)) => 0
+      case _ => 1 + checkEnvironmentForMassInput(formlet, env, nState._1)
+    }
+  }
+
+      
+    
 
 //	  val origS = s
 	  //_ <- put( (origS._1 * 100, Seq()) );

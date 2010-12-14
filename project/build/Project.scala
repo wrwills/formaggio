@@ -19,6 +19,16 @@ class Project(info: ProjectInfo) extends ParentProject(info)
 
 	val specs = "org.scala-tools.testing" %% "specs" % "1.6.6" % "test"
 	val scalaCheck = "org.scala-tools.testing" %% "scalacheck" % "1.7" % "test"  
+
+	override def consoleInit =
+"""
+import scalaz._
+import Scalaz._
+import scormlets._
+import Html._
+import Formlets._
+"""
+
       })
 
   lazy val scalatra_example =

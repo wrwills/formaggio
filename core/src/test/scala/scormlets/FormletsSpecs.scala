@@ -207,6 +207,16 @@ object FormletsSpecs extends Specification {
     }
 
   }
+
+  "plug should modify the xml in the form" in {
+    import scala.xml._
+
+    val plugged = inputText() plug ((x:NodeSeq) => <ul><li>{ x }</li></ul>)
+    val target = <ul><li><input value="" type="text" class="digestive-input" name="sc_1" id="sc_1"></input></li></ul>
+    // not sure why but this doesn't work if you compare the xml datastructures
+    (getFormView(plugged)).toString must_== target.toString
+
+  }
   
 
 }
