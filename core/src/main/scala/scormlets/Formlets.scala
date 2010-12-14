@@ -97,6 +97,19 @@ object Formlets {
 	} yield 
 	  (arslt._1, arslt._2 ⊹ frslt._2))
 
+  // transform the xml component
+    def plug(transform: NodeSeq => NodeSeq): Form[A] =
+      Form((env: Env) => 
+	for {
+	  s <- init[FormState]
+	  arslt <- this.value(env)
+	} yield 
+	  (arslt._1, 
+	   (err: Errors) => transform( arslt._2(err) ) ) )
+	  
+	
+
+      
 
   }
       
@@ -130,6 +143,19 @@ object Formlets {
 	  } yield (arslt._1 <*> frslt._1, frslt._2 ⊹ arslt._2))
   }
 
+  /*
+  def massInput[A](frm: Form[A]): Form[Seq[A]] = 
+    Form(
+      (env: Env) =>
+        for {
+          frslt <- form.value(env) 
+          s <- init[FormState]
+        } yield (
+	  
+	)
+    )*/
+
+
   def validate[A](form: Form[Validation[String,A]]): Form[A] = 
     validate(form, (x:String) => GenericError((_: String) => x) )
   
@@ -157,7 +183,8 @@ object Formlets {
    * run a form within an environment
    */
   def runFormState[A](frm: Form[A], env: Env, showErrors: Boolean = true) = {
-    val (valid,view) = (frm.value(env)) ! (0,List[String]())
+    //val (valid,view) = (frm.value(env)) ! (0,List[String]())
+    val (valid,view) = frm(env) ! (0,List[String]())
     val errors: Errors = 
       if (showErrors)
 	valid.fail.map(

@@ -19,6 +19,7 @@ object SampleData {
   import Scalaz._
   import Formlets._
   import Html._
+  import scala.xml._
   
 
   sealed trait Name extends NewType[String]
@@ -79,6 +80,11 @@ object SampleData {
 
 
   val favouritesForm1 = radio("food", Seq("GreenEggs", "Ham"), None) map ((x:String) => FavouriteFood.withName(x))
+
+  val favouriteFoodsForm: Form[FavouriteFood] = (label("Favourite food:") ++> radioEnumeration(FavouriteFood.values))
+
+//  val favouriteThings: Form[String] = 
+//    (label("Favourite things:") ++> massInput(inputText(), (x:NodeSeq) => x, (x:NodeSeq) => x, Seq()))
   
   //val favouritesForm = (label("Favourite food:") ++> radioEnumeration(FavouriteFood.values)){ Favourites((_:FavouriteFood),Seq()) }
 

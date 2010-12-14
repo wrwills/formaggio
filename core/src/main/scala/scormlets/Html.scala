@@ -32,7 +32,7 @@ object Html {
        	for {s <- init[FormState] 
 	     val newInt = s._1 + 1
 	     val lookupName = name + (s._1 + 1)
-	     ns <- modify((x: (FormState)) => (x._1 + 1, lookupName :: x._2))
+	     ns <- modify((x: FormState) => (x._1 + 1, lookupName :: x._2))
 	   } yield {
 	     val valid: Validation[(String,FormError),A] = validLookup(env, lookupName)
 	     (valid.liftFailNel, 
@@ -198,6 +198,8 @@ object Html {
       radio(nname + "enum", vals.toSeq.map(_.toString), vals.headOption.map(_.toString)) ∘ 
       toEnumerationValue(vals, "not in enumeration"))
 
+  
+
   //import scala.{ValueSet,Value}
 
   //def radio[A <: Enumeration](nname: String = "sc_", options: Set[A], default: Option[A.Value]) = 
@@ -214,17 +216,95 @@ object Html {
       case e: failure("no such element " + v  + " in enumeration")
     } */
 
-/*
-{
-    val labels = options.map( label(_._1)(List(_._2)) )
-    val radios = options.map( <input type="radio" name={ name } id={ _._2 } value={ _._2 }/> )
+//  def massInput[A](vals: Seq[A], nname: String = "sc_"): Seq[A] = 
+//    input(nname, 
 
-    //val radios = labels.map( <label for={ _._2 }>{ _._1 }</label><
-    (name: String, value: String) => ((errors: Map[String,String]) => {
-      val html = mkCheckedInputs("radio", nname, options, value)w
-      
-  }*/    
+  	  //ns <- modify((x: (FormState)) => (origS._1 * 100, origS._2) )
+	  //nnss <- modify((x: (FormState)) => (origS._1 + 1, nns._2) )
+//	  ns <- modify( (x: FormState) => (s._1, x._2 ++ s._2) )
+  /**
+   * a formlet for inputting lists of things
+   * : Form[Seq[A]] = 
+   */
+  def massInput[A](formlet: Form[A], 
+		   itemWrapper: NodeSeq => NodeSeq, 
+		   listWrapper: NodeSeq => NodeSeq, default: Seq[A]): Form[Seq[A]] =
+    Form(
+      (env: Env) =>  
+	for {
+	  s <- init[FormState];
+	  _ <- put( (s._1 * 100, List[String]()) );
+	  val mI = ((1 until 3) map ( _ => formlet)) sequence;
+	  ns <- modify( (x: FormState) => (s._1 + 1, x._2 ++ s._2) )
+	} yield {
+	  //val frm = mI(env)
+	  val frm = mI(env) ! (100, List())
+	  frm
+	})
 
+//	  val origS = s
+	  //_ <- put( (origS._1 * 100, Seq()) );
+	  //val mI = ((1 until 3) map ( _ => formlet)) sequence
+	  //nns <- init[FormState];
+	  //nnss <- put((origS._1, origS._2 ++ nns._2))
+
+		     /*
+  def massInput[A](formlet: Form[A], 
+		   itemWrapper: NodeSeq => NodeSeq, 
+		   listWrapper: NodeSeq => NodeSeq, default: Seq[A]): Form[Seq[A]] =
+    Form(
+      (env: Env) =>
+	for {
+	  s <- init[FormState] 
+	} yield {
+	  def massInputEnvironment(state: FormState, vals: Seq[]) = 
+	    env.get(state._2.head) match {
+	      case Some(nm) => 
+	  }
+	  val num = s._1 * 100
+	  val xml = 
+	    formlet(Map())
+	}) 
+
+  def massInputEnvironment[A](formlet: Form[A], env: Env, state: FormState): Seq[String] = {
+    
+  }*/
+    
+
+  val jsMassInputCode =
+  Seq("function findItems(button) {"
+  ,"  var mainDiv = $(button).parent();"
+  ,"  while ( !mainDiv.hasClass('massInput') ) {"
+  ,"    mainDiv = $(mainDiv).parent();"
+  ,"  }"
+  ,"  return $('.massInputItem', mainDiv);"
+  ,"}"
+  ,"function addItem(button) {"
+  ,"  var items = findItems(button);"
+  ,"  var item = $(items[items.length-1]);"
+  ,"  var newItem = item.clone(true);"
+  ,""
+  ,"  newItem.html(newItem.html().replace(/fval\\[(\\d+\\.)*(\\d+)\\.(\\d+)\\]/g, "
+  ,"    function(a, b, c, d) {"
+  ,"      var newC = parseInt(c)+1;"
+  ,"      return a.replace(/\\d+\\.\\d+\\]/, newC+'.'+d+']');"
+  ,"    }"
+  ,"  ));"
+  ,""
+  ,"  newItem.children('input').attr('value','');"
+  ,"  newItem.appendTo(item.parent());"
+  ,"}"
+  ,"function removeItem(button) {"
+  ,"  var items = findItems(button);"
+  ,"  if ( items.length > 1 ) {"
+  ,"    var item = $(items[items.length-1]);"
+  ,"    item.remove();"
+  ,"  } else {"
+  ,"    alert('Cannot remove any more rows');"
+  ,"  }"
+  ,"}").map(_ + "\n").foldLeft("")(((x:String),(y:String)) => x + y)
+
+  
   /**
    * add arbitrary html to the form
    */
