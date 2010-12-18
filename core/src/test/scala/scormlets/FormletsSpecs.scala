@@ -217,6 +217,15 @@ object FormletsSpecs extends Specification {
     (getFormView(plugged)).toString must_== target.toString
 
   }
+
+  "mass input forms should work correctly" in {
+    import scala.xml._
+
+    //val mI = massInput(inputText(), (x: NodeSeq) => <li>{ x }</li>, (x: NodeSeq) => <ul>{ x }</ul>, Seq() )
+    val mI = massInput(inputText())
+    //massInput(Map())((1,List()))    
+    println(getFormView(mI))
+  }
   
 
 }

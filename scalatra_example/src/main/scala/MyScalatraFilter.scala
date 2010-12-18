@@ -14,6 +14,25 @@ class MyScalatraFilter extends ScalatraFilter with ScalateSupport {
   import SampleData._
   import Scalaz._
   import Formlets._
+  import Html._
+
+  val massinputJsFile = "massinput.js"
+
+  
+  get ("/" + massinputJsFile) {
+    jsMassInputCode
+  }
+//	<script type="text/javascript">{ jsMassInputCode }</script>
+//	<script type="text/javascript" src={ massinputJsFile }/>
+  def template(x: NodeSeq) = 
+    <html>
+      <head>
+	<title>Scormlets Examples</title>
+	<script type="text/javascript" src={ jqueryUrl }/>
+	<script type="text/javascript" src={ massinputJsFile }/>
+      </head>
+      <body>{ x }</body>
+    </html>
 
   get("/") {
     <html>
@@ -52,6 +71,10 @@ class MyScalatraFilter extends ScalatraFilter with ScalateSupport {
 	}    
     </body>
     </html>
+  }
+
+  get ("/massinput") {
+    template(formTemplate(getFormView(favouriteThings)))
   }
 
 }

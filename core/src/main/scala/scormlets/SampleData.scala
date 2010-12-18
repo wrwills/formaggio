@@ -83,8 +83,8 @@ object SampleData {
 
   val favouriteFoodsForm: Form[FavouriteFood] = (label("Favourite food:") ++> radioEnumeration(FavouriteFood.values))
 
-//  val favouriteThings: Form[String] = 
-//    (label("Favourite things:") ++> massInput(inputText(), (x:NodeSeq) => x, (x:NodeSeq) => x, Seq()))
+  val favouriteThings: Form[Seq[String]] = 
+    label("Favourite things:") ++> massInput(inputText())
   
   //val favouritesForm = (label("Favourite food:") ++> radioEnumeration(FavouriteFood.values)){ Favourites((_:FavouriteFood),Seq()) }
 

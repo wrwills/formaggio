@@ -183,8 +183,8 @@ object Formlets {
    * run a form within an environment
    */
   def runFormState[A](frm: Form[A], env: Env, showErrors: Boolean = true) = {
-    //val (valid,view) = (frm.value(env)) ! (0,List[String]())
     val (valid,view) = frm(env) ! (0,List[String]())
+    //val (valid,view) = frm(env) ! (1,List[String]())
     val errors: Errors = 
       if (showErrors)
 	valid.fail.map(
