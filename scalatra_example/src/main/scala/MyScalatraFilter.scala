@@ -14,7 +14,6 @@ class MyScalatraFilter extends ScalatraFilter with ScalateSupport {
   import SampleData._
   import Scalaz._
   import Formlets._
-  import Html._
 
   val massinputJsFile = "massinput.js"
 

@@ -3,7 +3,6 @@ package scormlets
 import scalaz._
 import org.specs._
 import Formlets._
-import Html._
 
 object ViewHelpers {
   import scala.xml._
@@ -225,6 +224,23 @@ object FormletsSpecs extends Specification {
     val mI = massInput(inputText())
     //massInput(Map())((1,List()))    
     println(getFormView(mI))
+    (getInput("sc_::101", getFormView(mI)) \ "@name").text must_== "sc_::101"
+
+    "when sending multiple values to a mass input" in {
+      val rslt = runFormState(mI, Map("sc_::101" -> "foo", "sc_::102" -> "bar"))
+      println(rslt)
+      
+      "another entry should be added to the view to allow for a new input" in {	
+	((rslt._2 \\ "input") filter ((x:Node) => (x \ "@type").text == "text")).length must_== 3
+	//(rslt._2 \\ "input").length must_== 3
+	((getInput("sc_::103", rslt._2)) \ "@name").text must_== "sc_::103"
+      }
+
+      "the mass input must yield a collection" in {
+	rslt._1.toOption.get.toList must_== List("foo", "bar")
+      }
+    }
+    //getFormEither(mI, Map("sc_101" -> "foo", "sc_102" -> "bar"))
   }
   
 
