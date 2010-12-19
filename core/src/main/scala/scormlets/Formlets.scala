@@ -23,11 +23,12 @@ case class GenericError(msg: String => String) extends FormError {
   override def getErrorMessage(i: String) = msg(i)
 }
 
+trait Formlets
 
 /**
  * Formlets
  */
-object Formlets {
+object Formlets extends Html with MassInput {
 
   import Scalaz._
 

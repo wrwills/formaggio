@@ -1,7 +1,7 @@
 package scormlets
 
 import scalaz._
-
+//import scormlets
 
 /**
  * keep these in core so they can be reused across sample apps and testing
@@ -18,7 +18,6 @@ import scalaz._
 object SampleData {
   import Scalaz._
   import Formlets._
-  import Html._
   import scala.xml._
   
 
