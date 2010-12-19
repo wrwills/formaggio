@@ -62,7 +62,7 @@ object FormletsSpecs extends Specification {
 
     "form should fail if one of the values isn't filled in correctly" in {
       val rslt = runFormState(labelledFullNameForm, 
-			      Map("name1"-> "Jim", 
+			      Map("name::1"-> "Jim", 
 				  "name2" -> "bob"
 				))
       rslt._1.isFailure must beTrue
@@ -70,7 +70,7 @@ object FormletsSpecs extends Specification {
 
       val view = rslt._2
       println(view)
-      getValueForInput("name1", view) must_== "Jim"
+      getValueForInput("name::1", view) must_== "Jim"
       getValueForInput("name2", view) must_== "bob"
       
 
@@ -88,11 +88,11 @@ object FormletsSpecs extends Specification {
     "default input should be displayed if there is no input" in {
       val rslt = runFormState(form, Map())
       println(rslt)
-      getValueForInput("test1", rslt._2) must_== "default"
+      getValueForInput("test::1", rslt._2) must_== "default"
     }
     "empty string input should override default input" in {
-      val rslt = runFormState(form, Map("test1" -> ""))
-      getValueForInput("test1", rslt._2) must_== ""
+      val rslt = runFormState(form, Map("test::1" -> ""))
+      getValueForInput("test::1", rslt._2) must_== ""
     }
   }
 
@@ -100,19 +100,19 @@ object FormletsSpecs extends Specification {
     val form = optionalInputText("test", Some("default"))
 
     "input from environment should show up correctly in form" in {
-      val rslt = runFormState(form, Map("test1" -> "some text"))
+      val rslt = runFormState(form, Map("test::1" -> "some text"))
       rslt._1.isSuccess must beTrue
-      getValueForInput("test1", rslt._2) must_== "some text"
+      getValueForInput("test::1", rslt._2) must_== "some text"
     }
     "default input should be displayed if there is no input" in {
       val rslt = runFormState(form, Map())
       rslt._1.isFailure must beTrue
-      getValueForInput("test1", rslt._2) must_== "default"
+      getValueForInput("test::1", rslt._2) must_== "default"
     }
     "empty string input should override default input" in {
-      val rslt = runFormState(form, Map("test1" -> ""))
+      val rslt = runFormState(form, Map("test::1" -> ""))
       rslt._1.isSuccess must beTrue
-      getValueForInput("test1", rslt._2) must_== ""
+      getValueForInput("test::1", rslt._2) must_== ""
     }
   }
 
@@ -120,23 +120,23 @@ object FormletsSpecs extends Specification {
     val form = inputCheckbox("test")
     
     "if there is any input for the parameter then the form should return true" in {
-      val rslt = runFormState(form, Map("test1" -> "true"))
+      val rslt = runFormState(form, Map("test::1" -> "true"))
       println(rslt)
       rslt._1.either.right.get must_== true
-      (getInput("test1",rslt._2) \ "@checked").text must_== "yes"
+      (getInput("test::1",rslt._2) \ "@checked").text must_== "yes"
     }    
     "if there is no input then the form returns false" in {
       val rslt = runFormState(form, Map())
       rslt._1.isSuccess must beTrue
       rslt._1.either.right.get must_== false
-      (getInput("test1",rslt._2) \ "@checked").text must_== ""
+      (getInput("test::1",rslt._2) \ "@checked").text must_== ""
     }
   }
 
   "required checkboxes should be handled correctly" in {
     val form = termsAndConditions
     "if there is any input for the parameter then the form should return true" in {
-      val rslt = runFormState(form, Map("test1" -> "true"))
+      val rslt = runFormState(form, Map("test::1" -> "true"))
     }
   }
 
@@ -145,12 +145,12 @@ object FormletsSpecs extends Specification {
 
     val env = 
       Map(
-	"name1"-> "Jim", 
-	"name2" -> "Bob", 
-	"age3" -> "30",
-	"nickname5" -> "Jimbo",
-	"password7" -> "password",
-	"password6" -> "password"
+	"name::1"-> "Jim", 
+	"name::2" -> "Bob", 
+	"age::3" -> "30",
+	"nickname::5" -> "Jimbo",
+	"password::7" -> "password",
+	"password::6" -> "password"
       )
 
 
@@ -161,48 +161,48 @@ object FormletsSpecs extends Specification {
       val view = successRslt._2
 
       "fields should be filled in with environment values" in {
-	getValueForInput("name1", view) must_== "Jim"
-	getValueForInput("name2", view) must_== "Bob"
-	getValueForInput("age3", view) must_== "30"
+	getValueForInput("name::1", view) must_== "Jim"
+	getValueForInput("name::2", view) must_== "Bob"
+	getValueForInput("age::3", view) must_== "30"
       }
 
       "labels should be filled in correctly" in {
-	getValueForLabel("First", view) must_== "name1"
-	getValueForLabel("Second", view) must_== "name2"
-	getValueForLabel("Age", view) must_== "age3"
+	getValueForLabel("First", view) must_== "name::1"
+	getValueForLabel("Second", view) must_== "name::2"
+	getValueForLabel("Age", view) must_== "age::3"
       }
 
     }
     
     "form should fail if one of the values isn't filled in" in {
-      val rslt = runFormState(form, Map("name1"-> "Jim"))
+      val rslt = runFormState(form, Map("name::1"-> "Jim"))
       println(rslt)
 
       val view = rslt._2
       // gets filled in with default value
-      getValueForInput("name2", view) must_== "Billy"
+      getValueForInput("name::2", view) must_== "Billy"
 
       rslt._1.isFailure must beTrue
-      rslt._1.fail.toOption.get.head must_==  ("name2", LookupError)
+      rslt._1.fail.toOption.get.head must_==  ("name::2", LookupError)
     }
 
     "form should fail if one of the values isn't filled in correctly" in {
-      val rslt = runFormState(form, env + ("name2" -> "bob") + ("password6" -> "passwd"))
+      val rslt = runFormState(form, env + ("name::2" -> "bob") + ("password::6" -> "passwd"))
       println(rslt)
       rslt._1.isFailure must beTrue
 
       val errors = rslt._1.fail.toOption.get.list.toMap
-      //(errors.get("name2").get)("") must_== Some(GenericError("Name must start with a capital letter"))
+      //(errors.get("name::2").get)("") must_== Some(GenericError("Name must start with a capital letter"))
       //(errors.get("password7").get)("") must_== Some(GenericError("passwords don't match"))
 
       val view = rslt._2
-      getValueForInput("name1", view) must_== "Jim"
-      getValueForInput("name2", view) must_== "bob"
+      getValueForInput("name::1", view) must_== "Jim"
+      getValueForInput("name::2", view) must_== "bob"
       
       "and the view should contain an appropriate error message" in {
-	getErrorMessageForField("name2", view) must beSome("Name must start with a capital letter")
-	getErrorMessageForField("password7", view) must beSome("passwords don't match")
-	(getInput("name2", view) \ "@class").text must_== "digestive-input-error"
+	getErrorMessageForField("name::2", view) must beSome("Name must start with a capital letter")
+	getErrorMessageForField("password::7", view) must beSome("passwords don't match")
+	(getInput("name::2", view) \ "@class").text must_== "digestive-input-error"
       }
     }
 
@@ -212,7 +212,7 @@ object FormletsSpecs extends Specification {
     import scala.xml._
 
     val plugged = inputText() plug ((x:NodeSeq) => <ul><li>{ x }</li></ul>)
-    val target = <ul><li><input value="" type="text" class="digestive-input" name="sc_1" id="sc_1"></input></li></ul>
+    val target = <ul><li><input value="" type="text" class="digestive-input" name="sc_::1" id="sc_::1"></input></li></ul>
     // not sure why but this doesn't work if you compare the xml datastructures
     (getFormView(plugged)).toString must_== target.toString
 

@@ -31,7 +31,8 @@ object Html {
       (env: Env) =>  
        	for {s <- init[FormState] 
 	     val newInt = s._1 + 1
-	     val lookupName = name + (s._1 + 1)
+	     val lookupName = name + "::" + (s._1 + 1)
+	     //val lookupName = name + (s._1 + 1)
 	     ns <- modify((x: FormState) => (x._1 + 1, lookupName :: x._2))
 	   } yield {
 	     val valid: Validation[(String,FormError),A] = validLookup(env, lookupName)
@@ -249,7 +250,6 @@ object Html {
 	    val frmView = (pluggedFormlet(Map()) ! frmN._1)._2
 	    (frm._1, frm._2 ⊹ frmView)
 	  })
-    //frm.plug(wrapperDiv _ andThen buttons _ andThen listWrapper)
     frm.plug(listWrapper andThen buttons _ andThen wrapperDiv _)
   }
 
@@ -279,7 +279,12 @@ object Html {
       <input type="button" onclick="removeItem(this); return false;" value="Remove Last Item"/>{ x }</div>
       
   
-
+  /*
+   * javascript for mass input functionality
+   * - use jquery to get the last massinput item
+   * - get the last state number for that item
+   * - create a copy of that item incrementing state for every input name attribute
+   */
   val jsMassInputCode = """
 function findItems(button) {
   var mainDiv = $(button).parent();
@@ -288,18 +293,25 @@ function findItems(button) {
   }
   return $('.massInputItem', mainDiv);
 }
+//var state = 1
+
+//function incState(str, p1, offset, s) { var sp = str.split("_"); state = state + 1; return sp[0] + "_" + state + " "; }
+function incState(str, p1, offset, s) { var sp = str.split("::"); state = state + 1; return sp[0] + "::" + state; }
+
+function setState(str, p1, offset, s) { var sp = str.split("::"); state = parseInt(sp[1]); return state; }
+
 function addItem(button) {
   var items = findItems(button);
   var item = $(items[items.length-1]);
   var newItem = item.clone(true);
 
-  newItem.html(newItem.html().replace(/fval\[(\d+\.)*(\d+)\.(\d+)\]/g, 
-    function(a, b, c, d) {
-      var newC = parseInt(c)+1;
-      return a.replace(/\d+\.\d+\]/, newC+'.'+d+']');
-    }
-  ));
-
+  var state = 0;
+  //var regExp = /::\d\d\d/g;
+  var regExp = /name=\".*::\d\d\d/g
+  
+  newItem.html().replace(regExp,setState);
+  newItem.html(newItem.html().replace(regExp,incState))
+  
   newItem.children('input').attr('value','');
   newItem.appendTo(item.parent());
 }

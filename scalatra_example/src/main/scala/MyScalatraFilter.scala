@@ -22,22 +22,24 @@ class MyScalatraFilter extends ScalatraFilter with ScalateSupport {
   get ("/" + massinputJsFile) {
     jsMassInputCode
   }
-//	<script type="text/javascript">{ jsMassInputCode }</script>
-//	<script type="text/javascript" src={ massinputJsFile }/>
-  def template(x: NodeSeq) = 
+
+  def template(x: NodeSeq, title: String = "") = 
     <html>
       <head>
-	<title>Scormlets Examples</title>
+	<title>Scormlets Examples :: { title }</title>
 	<script type="text/javascript" src={ jqueryUrl }/>
 	<script type="text/javascript" src={ massinputJsFile }/>
       </head>
-      <body>{ x }</body>
+      <body><h1>{ title }</h1>{ x }</body>
     </html>
 
   get("/") {
     <html>
       <body>
-        <p>Register <a href="registration">here</a>.</p>
+	<ul>
+	  <li>Register <a href="registration">here</a>.</li>
+	  <li><a href="massinput">mass input</a></li>
+	</ul>
       </body>
     </html>
   }
@@ -45,7 +47,7 @@ class MyScalatraFilter extends ScalatraFilter with ScalateSupport {
   def formTemplate(n: NodeSeq) = 
     <form method='POST'>{ n }<input type='submit'/></form> 
 
-//	  <form action={url("/registration")} method='POST'>{
+
   get ("/registration") {
     <html>
       <body>
@@ -57,24 +59,28 @@ class MyScalatraFilter extends ScalatraFilter with ScalateSupport {
   }
 
   post ("/registration") {
-    <html>
-      <body>
-        <h1>Registration</h1> 
-	<h2>Params: { params }</h2>
-    {
-	  getFormValidation(personForm, params.iterator.toMap) match {
-	    case Success(s) => 
-	      <h3>Congratulations!</h3>
-	      <p>You've registered: { s.toString }</p>
-	    case Failure(v) => formTemplate(v)
-	  }
-	}    
-    </body>
-    </html>
+    val rslt: NodeSeq = 
+      getFormValidation(personForm, params.iterator.toMap) match {
+	case Success(s) => 
+	  <h3>Congratulations!</h3>
+	  <p>You've registered: { s.toString }</p>
+	case Failure(v) => <h2>Params: { params }</h2> ++ formTemplate(v)
+      }
+    // Registration
+    ///    <h1>Registration</h1> 
+    template(rslt, "Registration")
   }
 
   get ("/massinput") {
-    template(formTemplate(getFormView(favouriteThings)))
+    template(formTemplate(getFormView(favouriteThings)), "Mass Input")
+  }
+
+  post ("/massinput") {
+    val rslt =
+      getFormValidation( favouriteThings, params.iterator.toMap).fold(
+	e => <h2>Params: { params }</h2> ++ formTemplate(e),
+	s => <p>Mass input result: { s.toString }</p>)
+    template(rslt, "Mass Input Result")
   }
 
 }
