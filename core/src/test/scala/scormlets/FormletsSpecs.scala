@@ -220,15 +220,11 @@ object FormletsSpecs extends Specification {
   "mass input forms should work correctly" in {
     import scala.xml._
 
-    //val mI = massInput(inputText(), (x: NodeSeq) => <li>{ x }</li>, (x: NodeSeq) => <ul>{ x }</ul>, Seq() )
     val mI = massInput(inputText())
-    //massInput(Map())((1,List()))    
-    println(getFormView(mI))
     (getInput("sc_::101", getFormView(mI)) \ "@name").text must_== "sc_::101"
 
     "when sending multiple values to a mass input" in {
       val rslt = runFormState(mI, Map("sc_::101" -> "foo", "sc_::102" -> "bar"))
-      println(rslt)
       
       "another entry should be added to the view to allow for a new input" in {	
 	((rslt._2 \\ "input") filter ((x:Node) => (x \ "@type").text == "text")).length must_== 3
@@ -240,7 +236,33 @@ object FormletsSpecs extends Specification {
 	rslt._1.toOption.get.toList must_== List("foo", "bar")
       }
     }
-    //getFormEither(mI, Map("sc_101" -> "foo", "sc_102" -> "bar"))
+
+
+
+    "mass input should apppend to the rest of the form correctly" in {
+      case class Thingy(thing1: String, things: Seq[FullName], thing2: String) 
+      val frm = (inputText() |@| massInput(fullNameForm) |@| inputText() <++ ferrors){ Thingy(_,_,_) }
+
+      val rslt = 
+	getFormValidation(
+	  frm, 
+	  Map("sc_::1" -> "some", 
+	      "name::201" -> "Foo", "name::202" -> "Bar", 
+	      "name::203" -> "Jim", "name::204" -> "Bob", 
+	      "sc_::3" -> "another"))
+      //println(runFormState(frm, Map("sc_::1" -> "some", "name::201" -> "foo", "name::202" -> "bar", "sc_::3" -> "another")))
+      //println(getFormView(frm))
+      println(rslt)
+      rslt.isSuccess must beTrue
+      //val names = FullName(Name("Foo"),"Bar")
+      rslt.toOption.get must_== Thingy("some", Vector(FullName("Foo", "Bar").toOption.get,FullName("Jim","Bob").toOption.get),"another")
+      //rslt.toOption.get.things must
+      "errors should work correctly with mass input" in {
+	val rslt = getFormValidation(frm, Map("sc_::1" -> "some", "sc_::201" -> "foo", "sc_::202" -> "bar", "sc_::3" -> "another"))
+      }
+      
+    }
+
   }
   
 

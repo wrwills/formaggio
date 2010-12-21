@@ -23,9 +23,8 @@ trait MassInput {
 	    val ns = ((s._1 + 1) * 100, List[String]());
 	    _ <- put(ns);
 	    val lngth: Int = checkEnvironmentForMassInput(formlet, env, ns);
-	    //val mI = ((0 until lngth + 1) map ( _ => formlet.plug(itemWrapper))) sequence;
 	    val mI = ((0 until lngth) map ( _ => pluggedFormlet)) sequence;	    
-	    nns <- modify( (x: FormState) => (s._1 + 2, x._2 ++ s._2) )
+	    nns <- modify( (x: FormState) => (s._1 + 1, x._2 ++ s._2) )
 	  } yield {
 	    val frmN = mI(env)(ns)
 	    val frm = frmN._2

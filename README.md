@@ -36,8 +36,6 @@ This is not meant to be a web framework.  It is concerned solely with form handl
  * Have a play on the command line: 
  
      sbt 'project core' console  
-     import scalaz._  
-     import Scalaz._  
      import scormlets.SampleData._   
      val env =  
            Map(  
@@ -54,12 +52,11 @@ This is not meant to be a web framework.  It is concerned solely with form handl
 ## TODO: ##
 
  * I am still learning to get to grips with Scalaz so I'm sure there are alot of places where the code could be cleaned up
- * look at using ReaderT for the environment
  * handle file uploads
  * handle radio, multiple checkboxes, drop down selects
  * recaptchas?
- * examples of  Scala web frameworks such as Lift and Scalatra
- * support for different backends eg scalate
+ * create examples using lift framework
+ * support for different backends eg scalate, commandline
  
  
  

@@ -31,6 +31,11 @@ object SampleData {
   }
 
   case class FullName(first: Name, second: Name)
+  object FullName {
+    def apply(first: String, second: String): Validation[String,FullName] = 
+      (Name(first) |@| Name(second)){ FullName(_,_) }
+  }
+
   case class FullName2(first: String, second: String)
 
   val myForm = (inputText("first") |@| inputText("last")){FullName2(_,_)}
@@ -75,8 +80,6 @@ object SampleData {
   case class Favourites(food: FavouriteFood, things: Seq[String])
 
   val noFavourites = Favourites(GreenEggs, Seq())
-
-
 
   val favouritesForm1 = radio("food", Seq("GreenEggs", "Ham"), None) map ((x:String) => FavouriteFood.withName(x))
 
