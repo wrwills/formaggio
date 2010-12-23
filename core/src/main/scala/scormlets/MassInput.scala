@@ -76,9 +76,7 @@ function findItems(button) {
   }
   return $('.massInputItem', mainDiv);
 }
-//var state = 1
 
-//function incState(str, p1, offset, s) { var sp = str.split("_"); state = state + 1; return sp[0] + "_" + state + " "; }
 function incState(str, p1, offset, s) { var sp = str.split("::"); state = state + 1; return sp[0] + "::" + state; }
 
 function setState(str, p1, offset, s) { var sp = str.split("::"); state = parseInt(sp[1]); return state; }

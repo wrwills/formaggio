@@ -24,7 +24,9 @@ class Project(info: ProjectInfo) extends ParentProject(info)
 """
 import scalaz._
 import Scalaz._
-import scormlets.Formlets._
+import scormlets._
+import Formlets._
+import SampleData._
 """
 
       })

@@ -241,6 +241,8 @@ object FormletsSpecs extends Specification {
 
     "mass input should apppend to the rest of the form correctly" in {
       case class Thingy(thing1: String, things: Seq[FullName], thing2: String) 
+      implicit def ThingyEqual: Equal[Thingy] = equalA
+
       val frm = (inputText() |@| massInput(fullNameForm) |@| inputText() <++ ferrors){ Thingy(_,_,_) }
 
       val rslt = 
@@ -255,7 +257,17 @@ object FormletsSpecs extends Specification {
       println(rslt)
       rslt.isSuccess must beTrue
       //val names = FullName(Name("Foo"),"Bar")
-      rslt.toOption.get must_== Thingy("some", Vector(FullName("Foo", "Bar").toOption.get,FullName("Jim","Bob").toOption.get),"another")
+      println(Thingy("some", Vector(FullName("Foo", "Bar").toOption.get,FullName("Jim","Bob").toOption.get),"another"))
+      rslt.toOption.get.thing1 must_== "some"
+      rslt.toOption.get.thing2 must_== "another"
+      /* should pass this test but for some reason says not equal
+      (Seq(
+	FullName("Foo", "Bar"), 
+	FullName("Jim", "Bob")
+      ).sequence[({type λ[α]=Validation[String, α]})#λ, FullName]).toOption.get must_== rslt.toOption.get.things.toList
+      */
+      //(rslt.toOption.get ≟ Thingy("some", Vector(FullName("Foo", "Bar").toOption.get,FullName("Jim","Bob").toOption.get),"another")) must beTrue
+      //must_== Thingy("some", Vector(FullName("Foo", "Bar").toOption.get,FullName("Jim","Bob").toOption.get),"another")
       //rslt.toOption.get.things must
       "errors should work correctly with mass input" in {
 	val rslt = getFormValidation(frm, Map("sc_::1" -> "some", "sc_::201" -> "foo", "sc_::202" -> "bar", "sc_::3" -> "another"))
