@@ -51,12 +51,11 @@ This is not meant to be a web framework.  It is concerned solely with form handl
 
 ## TODO: ##
 
- * I am still learning to get to grips with Scalaz so I'm sure there are alot of places where the code could be cleaned up
  * handle file uploads
  * handle radio, multiple checkboxes, drop down selects
  * recaptchas?
  * create examples using lift framework
  * support for different backends eg scalate, commandline
- 
+ * i18n support for error messages, field names, etc 
  
  

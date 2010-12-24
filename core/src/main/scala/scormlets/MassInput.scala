@@ -24,9 +24,11 @@ trait MassInput {
 	    _ <- put(ns);
 	    val lngth: Int = checkEnvironmentForMassInput(formlet, env, ns);
 	    val mI = ((0 until lngth) map ( _ => pluggedFormlet)) sequence;	    
-	    nns <- modify( (x: FormState) => (s._1 + 1, x._2 ++ s._2) )
+	    // run the form in the environment and add the errors from that form to
+	    // the form state
+	    val frmN = mI(env)(ns);
+	    nns <- modify( (x: FormState) => (s._1 + 1, x._2 ++ s._2 ++ frmN._1._2) )
 	  } yield {
-	    val frmN = mI(env)(ns)
 	    val frm = frmN._2
 	    // we add another bit of html to the form but don't include it as part of what 
 	    // gets validated

@@ -252,25 +252,24 @@ object FormletsSpecs extends Specification {
 	      "name::201" -> "Foo", "name::202" -> "Bar", 
 	      "name::203" -> "Jim", "name::204" -> "Bob", 
 	      "sc_::3" -> "another"))
-      //println(runFormState(frm, Map("sc_::1" -> "some", "name::201" -> "foo", "name::202" -> "bar", "sc_::3" -> "another")))
-      //println(getFormView(frm))
-      println(rslt)
+
       rslt.isSuccess must beTrue
-      //val names = FullName(Name("Foo"),"Bar")
-      println(Thingy("some", Vector(FullName("Foo", "Bar").toOption.get,FullName("Jim","Bob").toOption.get),"another"))
       rslt.toOption.get.thing1 must_== "some"
       rslt.toOption.get.thing2 must_== "another"
-      /* should pass this test but for some reason says not equal
+      /* should pass this test but for some reason says not equal */
       (Seq(
 	FullName("Foo", "Bar"), 
 	FullName("Jim", "Bob")
-      ).sequence[({type λ[α]=Validation[String, α]})#λ, FullName]).toOption.get must_== rslt.toOption.get.things.toList
-      */
-      //(rslt.toOption.get ≟ Thingy("some", Vector(FullName("Foo", "Bar").toOption.get,FullName("Jim","Bob").toOption.get),"another")) must beTrue
-      //must_== Thingy("some", Vector(FullName("Foo", "Bar").toOption.get,FullName("Jim","Bob").toOption.get),"another")
-      //rslt.toOption.get.things must
+      ).sequence[({type λ[α]=Validation[String, α]})#λ, FullName]).toOption.get.toList.toString must_== rslt.toOption.get.things.toList.toString
+      
       "errors should work correctly with mass input" in {
-	val rslt = getFormValidation(frm, Map("sc_::1" -> "some", "sc_::201" -> "foo", "sc_::202" -> "bar", "sc_::3" -> "another"))
+	"errors from the mass input should be accumulated in the rest of the form if not shown in mass input" in {
+	  val rslt = runFormState(frm, Map("sc_::1" -> "", "name::201" -> "Foo", "name::202" -> "bar", "sc_::3" -> "another"))
+	  println(rslt)
+	  val view = rslt._2
+	  getErrorMessageForField("name::202", view) must beSome("Name must start with a capital letter")
+	  getErrorMessageForField("sc_::1", view) must beSome("empty string not allowed for sc_::1")
+	}
       }
       
     }
