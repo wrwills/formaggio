@@ -1,4 +1,4 @@
-package scormlets
+package formaggio
 
 import scalaz._
 
@@ -38,9 +38,11 @@ trait MassInput {
     frm.plug(listWrapper andThen buttons _ andThen wrapperDiv _)
   }
 
+  //def nonEmptyMassInput[A](mI: Form[Seq[A], 
+
   /*
-   * Find the number of mass input items
-   * I'm sure there's a better way to do this
+   * Find the number of mass input items by recursively running through state until we
+   * get to an input name which is not present in the form environment
    */
   def checkEnvironmentForMassInput[A](formlet: Form[A], env: Env, state: FormState): Int = {
     val nState = formlet(env)(state)
@@ -52,6 +54,7 @@ trait MassInput {
 
   def wrapperDiv(x: NodeSeq) = <div class="massInput">{ x }</div>
 
+  // this needs to be imported into any page which uses mass input				    
   val jqueryUrl = "http://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js"
 
   /*

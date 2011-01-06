@@ -1,5 +1,5 @@
-# Scormlets
-Scala Formlets
+# Formaggio
+## Formlets for Scala
 
 From the [Haskell Wiki](http://www.haskell.org/haskellwiki/Formlets): 
 "[Formlets](http://groups.inf.ed.ac.uk/links/formlets/) are a way of building HTML 

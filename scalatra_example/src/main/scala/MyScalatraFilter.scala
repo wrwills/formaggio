@@ -7,7 +7,7 @@ import scala.xml.{Text, Node, NodeSeq}
 //import org.apache.commons.io.IOUtils
 //import fileupload.FileUploadSupport
 
-import scormlets._
+import formaggio._
 import scalaz._
 
 class MyScalatraFilter extends ScalatraFilter with ScalateSupport {

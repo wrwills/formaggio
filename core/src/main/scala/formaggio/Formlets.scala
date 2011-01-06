@@ -1,4 +1,4 @@
-package scormlets
+package formaggio
 
 import scalaz._
 
