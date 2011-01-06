@@ -2,27 +2,6 @@ package formaggio
 
 import scalaz._
 
-
-trait FormError{
-  def getErrorMessage(i: String): String
-}
-
-trait FormException extends FormError with PimpedType[Exception] {
-  def getErrorMessage(i: String) = value.getMessage + ": " + i
-}
-
-case object LookupError extends FormError {
-  override def getErrorMessage(i: String) = "failed to find value for " + i
-}  
-
-case object EmptyStringError extends FormError {
-  override def getErrorMessage(i: String) = "empty string not allowed for " + i
-}
-
-case class GenericError(msg: String => String) extends FormError {
-  override def getErrorMessage(i: String) = msg(i)
-}
-
 trait Formlets
 
 /**
@@ -107,11 +86,7 @@ object Formlets extends Html with MassInput {
 	} yield 
 	  (arslt._1, 
 	   (err: Errors) => transform( arslt._2(err) ) ) )
-	  
-	
-
-      
-
+	  	      
   }
       
 
@@ -144,19 +119,6 @@ object Formlets extends Html with MassInput {
 	  } yield (arslt._1 <*> frslt._1, frslt._2 ⊹ arslt._2))
   }
 
-  /*
-  def massInput[A](frm: Form[A]): Form[Seq[A]] = 
-    Form(
-      (env: Env) =>
-        for {
-          frslt <- form.value(env) 
-          s <- init[FormState]
-        } yield (
-	  
-	)
-    )*/
-
-
   def validate[A](form: Form[Validation[String,A]]): Form[A] = 
     validate(form, (x:String) => GenericError((_: String) => x) )
   
@@ -185,7 +147,6 @@ object Formlets extends Html with MassInput {
    */
   def runFormState[A](frm: Form[A], env: Env, showErrors: Boolean = true) = {
     val (valid,view) = frm(env) ! (0,List[String]())
-    //val (valid,view) = frm(env) ! (1,List[String]())
     val errors: Errors = 
       if (showErrors)
 	valid.fail.map(
