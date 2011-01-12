@@ -48,6 +48,32 @@ trait Html {
 		 ) 
 	    ) 
 	   })
+
+
+  def emptyStringOptional(s: String) = if (s.length < 1) None else Some(s)
+
+  /*
+   * if the form returns Some[String] then that string is guaranteed to be nonempty
+   */
+  def input3[A](name: String, default: Option[A], view: (String,String) => View, 
+                stringRepresentation: A => String): Form[Option[String]] =
+    Form(
+      (env: Env) =>  
+        for {s <- init[FormState] 
+             val newInt = s._1 + 1
+             val lookupName = name + "::" + (s._1 + 1)
+             ns <- modify((x: FormState) => (x._1 + 1, lookupName :: x._2))
+           } yield {
+             val lookup = env.get(lookupName)
+             val dflt = default map (stringRepresentation(_))
+             val lookupValidation: Validation[NonEmptyList[(String, FormError)],Option[String]] = 
+               lookup.toSuccess[(String,FormError)]((lookupName,LookupError)).map(emptyStringOptional).map( _ orElse dflt).liftFailNel
+             (lookupValidation,
+              view(lookupName, 
+                   lookupValidation | dflt getOrElse("") ) ) 
+//                   lookup.getOrElse(default.map(stringRepresentation(_)).getOrElse(""))))
+           })
+
   
   /*
    * standard string input
