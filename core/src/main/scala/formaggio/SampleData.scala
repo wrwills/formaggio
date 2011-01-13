@@ -1,6 +1,7 @@
 package formaggio
 
 import scalaz._
+import collection.SortedSet
 //import scormlets
 
 /**
@@ -38,11 +39,11 @@ object SampleData {
 
   case class FullName2(first: String, second: String)
 
-  val myForm = (inputText("first") |@| inputText("last")){FullName2(_,_)}
-  val myNameForm: Form[Name] = validate(inputText("name") map Name.apply )
+  val myForm = (requiredInput("first") |@| requiredInput("last")){FullName2(_,_)}
+  val myNameForm: Form[Name] = validate(requiredInput("name") map Name.apply )
   val fullNameForm = (myNameForm  |@| myNameForm){  FullName(_,_) }
 
-  def labelledNameForm(s: String) =  validate(label(s) ++> (inputText("name", Some("Billy")) map Name.apply))
+  def labelledNameForm(s: String) =  validate(label(s) ++> (requiredInput("name", Some("Billy")) map Name.apply))
 
   val labelledFullNameForm = (labelledNameForm("First")  |@| labelledNameForm("Second")){ FullName(_,_) } <++ ferrors
 
@@ -63,7 +64,7 @@ object SampleData {
 
   }
 
-  val ageForm = validate(label("Age") ++> (inputText("age") map Age.apply))
+  val ageForm = validate(label("Age") ++> (requiredInput("age") map Age.apply))
 
   object FavouriteFood extends Enumeration {
     type FavouriteFood = Value
@@ -81,12 +82,12 @@ object SampleData {
 
   val noFavourites = Favourites(GreenEggs, Seq())
 
-  val favouritesForm1 = radio("food", Seq("GreenEggs", "Ham"), None) map ((x:String) => FavouriteFood.withName(x))
+//  val favouritesForm1 = radio("food", SortedSet("GreenEggs", "Ham"), None) map ((x:String) => FavouriteFood.withName(x))
 
-  val favouriteFoodsForm: Form[FavouriteFood] = (label("Favourite food:") ++> radioEnumeration(FavouriteFood.values))
+//  val favouriteFoodsForm: Form[FavouriteFood] = (label("Favourite food:") ++> radioEnumeration(FavouriteFood.values))
 
   val favouriteThings: Form[Seq[String]] = 
-    label("Favourite things:") ++> massInput(inputText())
+    label("Favourite things:") ++> massInput(requiredInput())
   
   //val favouritesForm = (label("Favourite food:") ++> radioEnumeration(FavouriteFood.values)){ Favourites((_:FavouriteFood),Seq()) }
 
@@ -120,7 +121,7 @@ object SampleData {
        labelledFullNameForm <++ br) |@| 
       (ageForm <++ ferrors <++ br) |@| 
       (label("Married:") ++> inputCheckbox("married") <++ br) |@| 
-      (label("Nickname:") ++> optionalInputText("nickname") <++ br) |@|
+      (label("Nickname:") ++> inputText("nickname") <++ br) |@|
       (validate(passwordValidation) <++ ferrors <++ br) |@|	
       (termsAndConditions <++ ferrors <++ br)      
     ){ mkPerson(_,_,_,_,_,_,noFavourites) }

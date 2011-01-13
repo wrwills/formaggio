@@ -1,6 +1,7 @@
 package formaggio
 
 import scalaz._
+import scala.collection.SortedSet
 
 /**
  * Html5 renderings of form components using scala.xml
@@ -20,43 +21,18 @@ trait Html {
   import Formlets._
   import scala.xml._
 
-
-  /**
-   * base method for adding an input
-   * adding an input causes the form state to be modified
-   */
-  def input[A](name: String, default: Option[A], view: (String,String) => View,
-	  validLookup: (Map[String,String], String) => Validation[(String,FormError),A],
-	     stringRepresentation: A => String): Form[A] =
-    Form(
-      (env: Env) =>  
-       	for {s <- init[FormState] 
-	     val newInt = s._1 + 1
-	     val lookupName = name + "::" + (s._1 + 1)
-	     //val lookupName = name + (s._1 + 1)
-	     ns <- modify((x: FormState) => (x._1 + 1, lookupName :: x._2))
-	   } yield {
-	     val valid: Validation[(String,FormError),A] = validLookup(env, lookupName)
-	     (valid.liftFailNel, 
-	      view(lookupName, 
-		   valid.fold(
-		     _ match {
-		       // empty strings in the environment override default input
-		       case (_,EmptyStringError) => ""
-		       case  _ => default.map(stringRepresentation(_)).getOrElse("")
-		     }, stringRepresentation(_))
-		 ) 
-	    ) 
-	   })
-
-
   def emptyStringOptional(s: String) = if (s.length < 1) None else Some(s)
 
   /*
-   * if the form returns Some[String] then that string is guaranteed to be nonempty
+   * base method for adding an input
+   * Takes care of incrementing the form state and generating a
+   * name for the input.
+   * If the input is not in the environment map, then we get a LookupError
+   * If the input is in the environment but it is an empty string then running the form returns None
+   * If the form returns Some[String] then that string is guaranteed to be nonempty
    */
-  def input3[A](name: String, default: Option[A], view: (String,String) => View, 
-                stringRepresentation: A => String): Form[Option[String]] =
+  def input[A](name: String, default: Option[A], view: (String,String) => View, 
+                stringRepresentation: A => String = (_: A).toString): Form[Option[String]] =
     Form(
       (env: Env) =>  
         for {s <- init[FormState] 
@@ -64,65 +40,49 @@ trait Html {
              val lookupName = name + "::" + (s._1 + 1)
              ns <- modify((x: FormState) => (x._1 + 1, lookupName :: x._2))
            } yield {
-             val lookup = env.get(lookupName)
              val dflt = default map (stringRepresentation(_))
              val lookupValidation: Validation[NonEmptyList[(String, FormError)],Option[String]] = 
-               lookup.toSuccess[(String,FormError)]((lookupName,LookupError)).map(emptyStringOptional).map( _ orElse dflt).liftFailNel
+               env.get(lookupName).toSuccess[(String,FormError)]((lookupName,LookupError)).map(emptyStringOptional).liftFailNel
+//               env.get(lookupName).toSuccess[(String,FormError)]((lookupName,LookupError)).map(emptyStringOptional).map( _ orElse dflt).liftFailNel
              (lookupValidation,
               view(lookupName, 
                    lookupValidation | dflt getOrElse("") ) ) 
-//                   lookup.getOrElse(default.map(stringRepresentation(_)).getOrElse(""))))
            })
 
-  
-  /*
-   * standard string input
-   * empty strings are not allowed
-   *
-   * we need to distinguish between a value being there as an empty string in the lookup environment
-   * and it not being there for display of default values
-   */
-  def input(name: String = "sc_", default: Option[String], view: (String,String) => View): Form[String] =
-    input(name, default, view, 
-	  (env: Map[String,String], lookupName: String) => 
-	    env.get(lookupName) match {
-	      case Some("") => failure[(String,FormError),String]((lookupName, EmptyStringError))
-	      case None => failure[(String,FormError),String]((lookupName, LookupError))
-	      case Some(s)  => s.success[(String,FormError)]
-	    }, _.toString)
-
-  /**
-   * optional input
-   * always succeeds even if there is nothing in the lookup environment
-   * empty strings in the lookup environment yield Some("")
-   */
-  def optionalInput(view: (String,String) => View, name: String = "sc_", default: Option[String]): Form[Option[String]] =
-    input(name, Some(default), view, 
-	  (env: Map[String,String], lookupName: String) => {
-	    val lookupResult: Validation[(String,FormError),Option[String]] = 
-	      env.get(lookupName) match {
-		case Some("") => None.success
-		case None     => failure((lookupName, LookupError))
-		case s        => s.success
-	      }
-	    lookupResult
-	  }
-	  , _.getOrElse(""))
-	          
-  def errorClassView(error: Boolean ) =  "digestive-input" + (if (error) "-error" else "")
-
-  def inputTextView(inputType: String = "text") = 
-    (name: String, value: String) => 
-      (errors: Map[String,String]) =>
-	<input type={ inputType } name={ name } id={ name } value={ value } 
-	 class={ errorClassView( errors.contains(name) ) } />
-
      
-  def optionalInputText(nname: String = "sc_", default: Option[String] = None): Form[Option[String]] =
-    optionalInput(inputTextView(), nname, default)
+  def inputText(nname: String = "sc_", default: Option[String] = None, inputType: String = "text"): Form[Option[String]] = {
+    def inputView(inputType: String) = 
+      (name: String, value: String) => 
+	(errors: Map[String,String]) =>
+	  <input type={ inputType } name={ name } id={ name } value={ value } 
+          class={ errorClassView( errors.contains(name) ) } />
 
-  def inputText(nname: String = "sc_", default: Option[String] = None, inputType: String = "text"): Form[String] =
-    input(nname, default, inputTextView(inputType))
+    input(nname, default, inputView(inputType))
+  }
+
+  def requiredInput(nname: String = "sc_", default: Option[String] = None, inputType: String = "text"): Form[String] = 
+    formNonEmpty( inputText(nname, default, inputType) )
+
+//: Form[String] =
+  def inputPassword(nname: String = "sc_password_"): Form[String] = 
+    requiredInput( nname, inputType = "password" )
+
+/*
+ *     formNonEmpty( inputText(nname, default, "password") )
+    {
+    val psswd: Form[Validation[FormError,String]] = inputText(nname, default, "password") map (nonEmpty _)
+    liftValidation(psswd)
+  } */
+ //   liftValidation(inputText(nname, default, "password") map (nonEmpty _))
+
+  // hidden input: default value is not optional
+  def hidden(nname: String = "sc_", default: String): Form[Option[String]] =
+    inputText(nname, Some(default), "hidden")
+
+  def formNonEmpty[A](x : Form[Option[A]]): Form[A] = 
+    liftValidation( x map (nonEmpty _))
+        	          
+  def errorClassView(error: Boolean ) =  "digestive-input" + (if (error) "-error" else "")
 
   def inputTextAreaView(cols: Int, rows: Int)  = 
     (name: String, value: String) => 
@@ -131,19 +91,9 @@ trait Html {
 	  class={ errorClassView(errors.contains(name) ) }
 	  cols={ cols.toString } rows={ rows.toString } >{ value }</textarea>
       
-  def inputTextArea(nname: String = "sc_", cols: Int = 40, rows: Int = 3, default: Option[String] = None): Form[String] =
+  def inputTextArea(nname: String = "sc_", cols: Int = 40, rows: Int = 3, default: Option[String] = None): Form[Option[String]] =
       input(nname, default, inputTextAreaView(cols, rows))
 
-  def optionalInputTextArea(nname: String = "sc_", default: Option[String] = None, cols: Int = 40, rows: Int = 3): Form[Option[String]] =
-    optionalInput(inputTextAreaView(cols, rows), nname, default)
-
-  def inputPassword(nname: String = "sc_", default: Option[String] = None): Form[String] =
-    inputText(nname, default, "password")
-
-  // hidden input: default value is not optional
-  def hidden(nname: String = "sc_", default: String) =
-    inputText(nname, Some(default), "hidden")
-  
 
   /*
   implicit 
@@ -160,23 +110,26 @@ trait Html {
    * and no values being there at all: ie if you set a checkbox to default to true it will
    * always be redisplayed checked
    */
-  def inputCheckbox(nname: String = "sc_"): Form[Boolean] = 
-    input(
-      nname,
-      Some(false),
-      (name: String, value: String) => ((errors: Map[String,String]) => {
-	val input = 
-	  <input type="checkbox" name={ name } id={ name } value="true"
+  def inputCheckbox(nname: String = "sc_"): Form[Boolean] = {
+    val chkbx = 
+      input(nname, Some(false),
+	(name: String, value: String) => 
+	  ((errors: Map[String,String]) => {
+	    val input = 
+	      <input type="checkbox" name={ name } id={ name } value="true"
 	    class={ errorClassView(false) } />
-	if (value == "true") 
-	  input.copy(attributes = input.attributes.append(new UnprefixedAttribute("checked", "yes", Null)))
-	else
-	  input
-      }), 
-      (env: Map[String,String], lookupName: String) => 
-	env.get(lookupName).isDefined.success,
-      _.toString
-    )
+	    if (value == "true") 
+	      input.copy(attributes = input.attributes.append(new UnprefixedAttribute("checked", "yes", Null)))
+	    else
+	      input
+	  }))
+    def toBool(x: Option[String]) = 
+      x match {
+	case Some("true") => true
+	case _ => false
+      }
+    chkbx ∘ toBool _    
+  }
 
   // todo:
   // def checkboxChoice(nname: String = "sc_"): Form[Boolean] = 
@@ -199,32 +152,39 @@ trait Html {
   } 
     
 
+  private def radio2(nname: String, options: SortedSet[String], default: Option[String]): Form[Option[String]] = {
+    val opts = options.toSeq.map(x => (x, x))
+    input(nname, default,
+	  (name: String, value: String) => 
+	    ((errors: Map[String,String]) =>
+	      mkCheckedInputs("radio", nname, opts, value).flatten ) )
+  }
+
   /*
    * radio choice -- only one is selected
    * todo: look at differences between html4 and html5 for this
    * 2nd part of options  should be unique
+   * If there is a default value then the formlet is guaranteed to return something
    */  
-  def radio2(nname: String, options: Seq[(String,String)], default: Option[String]): Form[String] = 
-    input(
-      nname,
-      default,
-      (name: String, value: String) => 
-	((errors: Map[String,String]) =>
-	  mkCheckedInputs("radio", nname, options, value).flatten ) )
+  def radio(nname: String = "sc_", options: SortedSet[String]): Form[Option[String]] =
+    radio2(nname, options, None)
 
+  def radio(nname: String, options: SortedSet[String], default: String): Form[String] = 
+    formNonEmpty( radio2(nname, options, Some(default)) )
   // a radio choice  
   
-  def radio(nname: String = "sc_", options: Seq[String], default: Option[String]): Form[String] =
-    radio2(nname, options.map(x => (x, x)), default ) 
+  //def radio(nname: String = "sc_", options: Seq[String], default: Option[String]): Form[String] =
+  //  radio2(nname, options.map(x => (x, x)), default ) 
 
   def toEnumerationValue[A](vals: Set[A], errorMessage: String): String => Validation[String,A] =
     (str: String) =>
       vals.toSeq.filter( _.toString != "Value").filter(_.toString == str).headOption.toSuccess(errorMessage)
 
-  def radioEnumeration[A](vals: Set[A], nname: String = "sc_"): Form[A] = 
+  // must return somethin
+  def radioEnumeration[A](vals: SortedSet[A], nname: String = "sc_", default: A): Form[A] = 
     validate(
-      radio(nname + "enum", vals.toSeq.map(_.toString), vals.headOption.map(_.toString)) ∘ 
-      toEnumerationValue(vals, "not in enumeration"))
+      radio(nname + "enum", vals.map(_.toString), default.toString) ∘ 
+      toEnumerationValue(vals.toSet, "not in enumeration"))
  
   
   /**

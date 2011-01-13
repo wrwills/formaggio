@@ -82,7 +82,7 @@ object FormletsSpecs extends Specification {
   }*/
 
   "inputs should be handled correctly" in {
-    val form = inputText("test", Some("default"))
+    val form = requiredInput("test", Some("default"))
 
     "default input should be displayed if there is no input" in {
       val rslt = runFormState(form, Map())
@@ -91,12 +91,13 @@ object FormletsSpecs extends Specification {
     }
     "empty string input should override default input" in {
       val rslt = runFormState(form, Map("test::1" -> ""))
+      rslt._1.isSuccess must beFalse
       getValueForInput("test::1", rslt._2) must_== ""
     }
   }
 
   "optional inputs should be handled correctly" in {
-    val form = optionalInputText("test", Some("default"))
+    val form = inputText("test", Some("default"))
 
     "input from environment should show up correctly in form" in {
       val rslt = runFormState(form, Map("test::1" -> "some text"))
@@ -110,7 +111,9 @@ object FormletsSpecs extends Specification {
     }
     "empty string input should override default input" in {
       val rslt = runFormState(form, Map("test::1" -> ""))
+      println(rslt)
       rslt._1.isSuccess must beTrue
+      rslt._1 must_== Success(None)
       getValueForInput("test::1", rslt._2) must_== ""
     }
   }
@@ -216,7 +219,7 @@ object FormletsSpecs extends Specification {
     (getFormView(plugged)).toString must_== target.toString
 
   }
-
+    /*
   "mass input forms should work correctly" in {
     import scala.xml._
 
@@ -274,7 +277,7 @@ object FormletsSpecs extends Specification {
       
     }
 
-  }
+  }*/
   
 
 }

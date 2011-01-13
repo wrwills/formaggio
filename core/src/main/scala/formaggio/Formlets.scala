@@ -88,7 +88,6 @@ object Formlets extends Html with MassInput {
 	   (err: Errors) => transform( arslt._2(err) ) ) )
 	  	      
   }
-      
 
   object Form {
     def apply[A](fn: Env => State[FormState,(ValidForm[A],View)]) = 
@@ -119,6 +118,9 @@ object Formlets extends Html with MassInput {
 	  } yield (arslt._1 <*> frslt._1, frslt._2 ⊹ arslt._2))
   }
 
+  def liftValidation[A](form: Form[Validation[FormError,A]]): Form[A] = 
+    validate( form, (x:FormError) => x)
+
   def validate[A](form: Form[Validation[String,A]]): Form[A] = 
     validate(form, (x:String) => GenericError((_: String) => x) )
   
@@ -141,6 +143,18 @@ object Formlets extends Html with MassInput {
     )
 
   def convertErrorToErrorMessage(x: (String,FormError)) = (x._1, x._2.getErrorMessage(x._1))
+   
+  /*
+  trait OptionalForm[A, B <: Option[A]] extends Form[Option[A]] {
+//    def nonEmptyo = formNonEmpty(this)
+    def ne = this map ( (x:B) => x.toSuccess(EmptyError) )
+    //def nonEmptyo: Form[A] = liftValidation( this map (nonEmpty _) )
+  }*/
+    
+
+  def nonEmpty[A](x: Option[A]) = x.toSuccess(EmptyError)
+  
+
      
   /**
    * run a form within an environment

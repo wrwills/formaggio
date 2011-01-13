@@ -14,6 +14,10 @@ case object LookupError extends FormError {
   override def getErrorMessage(i: String) = "failed to find value for " + i
 }  
 
+case object EmptyError extends FormError {
+  override def getErrorMessage(i: String) = i + " must not be empty."
+}
+
 case object EmptyStringError extends FormError {
   override def getErrorMessage(i: String) = "empty string not allowed for " + i
 }
