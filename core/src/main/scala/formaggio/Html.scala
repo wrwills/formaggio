@@ -23,16 +23,20 @@ trait Html {
 
   def emptyStringOptional(s: String) = if (s.length < 1) None else Some(s)
 
-  /*
-   * base method for adding an input
-   * Takes care of incrementing the form state and generating a
-   * name for the input.
-   * If the input is not in the environment map, then we get a LookupError
-   * If the input is in the environment but it is an empty string then running the form returns None
-   * If the form returns Some[String] then that string is guaranteed to be nonempty
+  /**
+   * doesn't fail if input isn't in the environment map
+   * thus an empty string is indistinguishable from nothing being in the environment
+   * needed for checkboxes
    */
-  def input[A](name: String, default: Option[A], view: (String,String) => View, 
-                stringRepresentation: A => String = (_: A).toString): Form[Option[String]] =
+  def nonFailingInput[A](
+    name: String, default: Option[A], view: (String,String) => View, 
+    stringRepresentation: A => String = (_: A).toString
+  ): Form[Option[String]] = 
+    optionalInput(
+      name, default, view, stringRepresentation, 
+      (env,lookupName) => 
+	emptyStringOptional(env.get(lookupName).getOrElse("")).success[NonEmptyList[(String,FormError)]])
+/*
     Form(
       (env: Env) =>  
         for {s <- init[FormState] 
@@ -42,11 +46,44 @@ trait Html {
            } yield {
              val dflt = default map (stringRepresentation(_))
              val lookupValidation: Validation[NonEmptyList[(String, FormError)],Option[String]] = 
-               env.get(lookupName).toSuccess[(String,FormError)]((lookupName,LookupError)).map(emptyStringOptional).liftFailNel
-//               env.get(lookupName).toSuccess[(String,FormError)]((lookupName,LookupError)).map(emptyStringOptional).map( _ orElse dflt).liftFailNel
+               emptyStringOptional(env.get(lookupName).getOrElse("")).success[NonEmptyList[(String,FormError)]]
              (lookupValidation,
               view(lookupName, 
                    lookupValidation | dflt getOrElse("") ) ) 
+           })
+*/		  
+
+  /*
+   * base method for adding an input
+   * Takes care of incrementing the form state and generating a
+   * name for the input.
+   *
+   * most formlets will use this the default lookupValidation
+   * If the input is not in the environment map, then we get a LookupError
+   * If the input is in the environment but it is an empty string then running the form returns None
+   * If the form returns Some[String] then that string is guaranteed to be nonempty
+   */
+  def optionalInput[A](
+    name: String, default: Option[A], view: (String,String) => View, 
+    stringRepresentation: A => String = (_: A).toString, 
+    lookupValidation: (Env, String) => Validation[NonEmptyList[(String, FormError)],Option[String]] = 
+      (env,lookupName) => env.get(lookupName).toSuccess[(String,FormError)]((lookupName,LookupError)).map(emptyStringOptional).liftFailNel
+  ): Form[Option[String]] =
+    Form(
+      (env: Env) =>  
+        for {s <- init[FormState] 
+             val newInt = s._1 + 1
+             val lookupName = name + "::" + (s._1 + 1)
+             ns <- modify((x: FormState) => (x._1 + 1, lookupName :: x._2))
+           } yield {
+             val dflt = default map (stringRepresentation(_))
+             //val lookupValidation: Validation[NonEmptyList[(String, FormError)],Option[String]] = 
+//               env.get(lookupName).toSuccess[(String,FormError)]((lookupName,LookupError)).map(emptyStringOptional).liftFailNel
+//               env.get(lookupName).toSuccess[(String,FormError)]((lookupName,LookupError)).map(emptyStringOptional).map( _ orElse dflt).liftFailNel
+	     val lookup = lookupValidation(env, lookupName)
+             (lookup,
+              view(lookupName, 
+                   lookup | dflt getOrElse("") ) ) 
            })
 
      
@@ -57,7 +94,7 @@ trait Html {
 	  <input type={ inputType } name={ name } id={ name } value={ value } 
           class={ errorClassView( errors.contains(name) ) } />
 
-    input(nname, default, inputView(inputType))
+    optionalInput(nname, default, inputView(inputType))
   }
 
   def requiredInput(nname: String = "sc_", default: Option[String] = None, inputType: String = "text"): Form[String] = 
@@ -92,7 +129,7 @@ trait Html {
 	  cols={ cols.toString } rows={ rows.toString } >{ value }</textarea>
       
   def inputTextArea(nname: String = "sc_", cols: Int = 40, rows: Int = 3, default: Option[String] = None): Form[Option[String]] =
-      input(nname, default, inputTextAreaView(cols, rows))
+      optionalInput(nname, default, inputTextAreaView(cols, rows))
 
 
   /*
@@ -110,9 +147,9 @@ trait Html {
    * and no values being there at all: ie if you set a checkbox to default to true it will
    * always be redisplayed checked
    */
-  def inputCheckbox(nname: String = "sc_"): Form[Boolean] = {
+  def inputCheckbox(nname: String = "sc_", default: Boolean = false): Form[Boolean] = {
     val chkbx = 
-      input(nname, Some(false),
+      nonFailingInput(nname, Some(default),
 	(name: String, value: String) => 
 	  ((errors: Map[String,String]) => {
 	    val input = 
@@ -154,7 +191,7 @@ trait Html {
 
   private def radio2(nname: String, options: SortedSet[String], default: Option[String]): Form[Option[String]] = {
     val opts = options.toSeq.map(x => (x, x))
-    input(nname, default,
+    optionalInput(nname, default,
 	  (name: String, value: String) => 
 	    ((errors: Map[String,String]) =>
 	      mkCheckedInputs("radio", nname, opts, value).flatten ) )
