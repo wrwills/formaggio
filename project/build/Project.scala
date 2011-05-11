@@ -2,23 +2,33 @@ import sbt._
 
 class Project(info: ProjectInfo) extends ParentProject(info)
 {
-  val scalazVersion = "5.1-SNAPSHOT"
+  val scalazVersion = "6.0-SNAPSHOT"
 
-  val scalaToolsSnapshots = "Scala Tools Snapshots" at "http://scala-tools.org/repo-snapshots/"
+  //val scalaToolsSnapshots = "Scala Tools Snapshots" at "http://scala-tools.org/repo-snapshots/"
 
   val sonatypeNexusSnapshots = "Sonatype Nexus Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
   // For Scalate
   val fuseSourceSnapshots = "FuseSource Snapshot Repository" at "http://repo.fusesource.com/nexus/content/repositories/snapshots"
+
+  val snapshots = "snapshots" at "http://scala-tools.org/repo-snapshots"
+  val releases  = "releases" at "http://scala-tools.org/repo-releases"
 
   lazy val core = 
     project(
       "core", 
       "core", 
       new DefaultProject(_) {
-	val scalazCore = "com.googlecode.scalaz" %% "scalaz-core" % scalazVersion
+	val scalazCore = "org.scalaz" %% "scalaz-core" % scalazVersion
+	//val scalazCore = "com.googlecode.scalaz" %% "scalaz-core" % scalazVersion
 
-	val specs = "org.scala-tools.testing" %% "specs" % "1.6.6" % "test"
-	val scalaCheck = "org.scala-tools.testing" %% "scalacheck" % "1.7" % "test"  
+
+	val specs2 = "org.specs2" %% "specs2" % "1.3-SNAPSHOT" % "test"
+ 
+	def specs2Framework = new TestFramework("org.specs2.runner.SpecsFramework")
+	override def testFrameworks = super.testFrameworks ++ Seq(specs2Framework)
+
+	//val specs = "org.scala-tools.testing" %% "specs" % "1.6.6" % "test"
+	//val scalaCheck = "org.scala-tools.testing" %% "scalacheck" % "1.7" % "test"  
 
 	override def consoleInit =
 """
@@ -31,6 +41,7 @@ import SampleData._
 
       })
 
+  /*
   lazy val scalatra_example =
     project(
       "scalatra_example", 
@@ -51,7 +62,7 @@ import SampleData._
 	override def testClasspath = super.testClasspath +++ buildCompilerJar
 
       }, core)
-
+      */
 
 
 }
