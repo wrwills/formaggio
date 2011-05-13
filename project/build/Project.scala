@@ -2,7 +2,8 @@ import sbt._
 
 class Project(info: ProjectInfo) extends ParentProject(info)
 {
-  val scalazVersion = "6.0-SNAPSHOT"
+  //val scalazVersion = "6.0-SNAPSHOT"
+  val scalazVersion = "6.0.RC2"
 
   //val scalaToolsSnapshots = "Scala Tools Snapshots" at "http://scala-tools.org/repo-snapshots/"
 
