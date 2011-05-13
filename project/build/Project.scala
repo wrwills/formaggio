@@ -42,16 +42,17 @@ import SampleData._
 
       })
 
-  /*
+  
   lazy val scalatra_example =
     project(
       "scalatra_example", 
       "scalatra_example", 
       new DefaultWebProject(_) {
-	  val scalatraVersion = "2.0.0.M2"
+	  val scalatraVersion = "2.0.0-SNAPSHOT"
 	val scalatra = "org.scalatra" %% "scalatra" % scalatraVersion
 	val scalate = "org.scalatra" %% "scalatra-scalate" % scalatraVersion
 	val servletApi = "org.mortbay.jetty" % "servlet-api" % "2.5-20081211" % "provided"
+	//val servletApi = "org.mortbay.jetty" % "servlet-api" % "2.5" % "provided"
 
 	// Alternatively, you could use scalatra-specs
 	val scalatest = "org.scalatra" %% "scalatra-scalatest" % scalatraVersion % "test"
@@ -63,7 +64,6 @@ import SampleData._
 	override def testClasspath = super.testClasspath +++ buildCompilerJar
 
       }, core)
-      */
 
 
 }

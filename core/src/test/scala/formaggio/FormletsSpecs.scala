@@ -1,7 +1,8 @@
 package formaggio
 
 import scalaz._
-import org.specs._
+
+import org.specs2.mutable._
 import Formlets._
 
 object ViewHelpers {
@@ -81,7 +82,7 @@ object FormletsSpecs extends Specification {
     }
   }*/
 
-  "inputs should be handled correctly" in {
+  "inputs" should {
     val form = requiredInput("test", Some("default"))
 
     "default input should be displayed if there is no input" in {
@@ -135,12 +136,13 @@ object FormletsSpecs extends Specification {
     }
   }
 
+  /*
   "required checkboxes should be handled correctly" in {
     val form = termsAndConditions
     "if there is any input for the parameter then the form should return true" in {
       val rslt = runFormState(form, Map("test::1" -> "true"))
     }
-  }
+  }*/
 
   "for a person form" in {
     val form = personForm

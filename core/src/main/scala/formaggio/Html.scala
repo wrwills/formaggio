@@ -27,31 +27,17 @@ trait Html {
    * doesn't fail if input isn't in the environment map
    * thus an empty string is indistinguishable from nothing being in the environment
    * needed for checkboxes
+   * A corollary of this is that default values cannot have any effect on this sort of input
+   * http://www.w3.org/TR/html401/interact/forms.html#successful-controls
    */
   def nonFailingInput[A](
-    name: String, default: Option[A], view: (String,String) => View, 
+    name: String, view: (String,String) => View, 
     stringRepresentation: A => String = (_: A).toString
   ): Form[Option[String]] = 
     optionalInput(
-      name, default, view, stringRepresentation, 
+      name, None, view, stringRepresentation, 
       (env,lookupName) => 
 	emptyStringOptional(env.get(lookupName).getOrElse("")).success[NonEmptyList[(String,FormError)]])
-/*
-    Form(
-      (env: Env) =>  
-        for {s <- init[FormState] 
-             val newInt = s._1 + 1
-             val lookupName = name + "::" + (s._1 + 1)
-             ns <- modify((x: FormState) => (x._1 + 1, lookupName :: x._2))
-           } yield {
-             val dflt = default map (stringRepresentation(_))
-             val lookupValidation: Validation[NonEmptyList[(String, FormError)],Option[String]] = 
-               emptyStringOptional(env.get(lookupName).getOrElse("")).success[NonEmptyList[(String,FormError)]]
-             (lookupValidation,
-              view(lookupName, 
-                   lookupValidation | dflt getOrElse("") ) ) 
-           })
-*/		  
 
   /*
    * base method for adding an input
@@ -146,10 +132,11 @@ trait Html {
    * and it is therefore impossible to distinguish between the box having been set to false
    * and no values being there at all: ie if you set a checkbox to default to true it will
    * always be redisplayed checked
+   * TODO: i think this can be got around using a hack with multiple checkboxes
    */
-  def inputCheckbox(nname: String = "sc_", default: Boolean = false): Form[Boolean] = {
+  def inputCheckbox(nname: String = "sc_"): Form[Boolean] = {
     val chkbx = 
-      nonFailingInput(nname, Some(default),
+      nonFailingInput(nname,
 	(name: String, value: String) => 
 	  ((errors: Map[String,String]) => {
 	    val input = 
@@ -167,6 +154,30 @@ trait Html {
       }
     chkbx ∘ toBool _    
   }
+  /*
+  def inputCheckbox2(nname: String = "sc_", default: Boolean = false): Form[Boolean] = {
+    val chkbx = 
+      optionalInput(nname,
+	(name: String, value: String) => 
+	  ((errors: Map[String,String]) => {
+	    val input = 
+	      <input type="checkbox" name={ name } id={ name } value="true"
+                     class={ errorClassView(false) } />
+	      <input type="checkbox" name={ name } id={ name } value="true"
+                     class={ errorClassView(false) } />	      
+	    if (value == "true") 
+	      input.copy(attributes = input.attributes.append(new UnprefixedAttribute("checked", "yes", Null)))
+	    else
+	      input
+	  }))
+    def toBool(x: Option[String]) = 
+      x match {
+	case Some("true") => true
+	case _ => false
+      }
+    chkbx ∘ toBool _    
+  }*/
+
 
   // todo:
   // def checkboxChoice(nname: String = "sc_"): Form[Boolean] = 

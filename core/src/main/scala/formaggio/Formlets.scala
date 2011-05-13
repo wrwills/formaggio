@@ -37,9 +37,13 @@ object Formlets extends Html with MassInput {
 
   type Errors = Map[String,String]
   type Env = Map[String, String] // worry about files later
+  //type Env = Map[String, NonEmptyList[String]] // worry about files later
   type ValidForm[A] = Validation[NonEmptyList[(String,FormError)],A]
 
-  // form state is an integer showing the number of the last input together 
+  /*
+   * form state is an integer showing the number of the last input together with
+   * a list of inputs
+   */
   type FormState = (Int,List[String])
 
   /*
@@ -109,7 +113,8 @@ object Formlets extends Html with MassInput {
   }
 
   implicit def FormApply: Apply[Form] = new Apply[Form] {
-    def apply[A,B](f: => Form[A => B], a: => Form[A]): Form[B] = 
+
+    def apply[A,B](f: Form[A => B], a: Form[A]): Form[B] = 
       Form(
 	(env: Env) =>
 	  for {
