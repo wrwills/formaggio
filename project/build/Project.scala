@@ -20,16 +20,11 @@ class Project(info: ProjectInfo) extends ParentProject(info)
       "core", 
       new DefaultProject(_) {
 	val scalazCore = "org.scalaz" %% "scalaz-core" % scalazVersion
-	//val scalazCore = "com.googlecode.scalaz" %% "scalaz-core" % scalazVersion
 
-
-	val specs2 = "org.specs2" %% "specs2" % "1.3-SNAPSHOT" % "test"
+	val specs2 = "org.specs2" %% "specs2" % "1.3" % "test"
  
 	def specs2Framework = new TestFramework("org.specs2.runner.SpecsFramework")
 	override def testFrameworks = super.testFrameworks ++ Seq(specs2Framework)
-
-	//val specs = "org.scala-tools.testing" %% "specs" % "1.6.6" % "test"
-	//val scalaCheck = "org.scala-tools.testing" %% "scalacheck" % "1.7" % "test"  
 
 	override def consoleInit =
 """
