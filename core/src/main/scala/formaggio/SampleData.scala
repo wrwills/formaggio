@@ -127,5 +127,15 @@ object SampleData {
     ){ mkPerson(_,_,_,_,_,_,noFavourites) }
 
 
+  val sampleEnv = 
+      Map(
+	"name::1"-> "Jim", 
+	"name::2" -> "Bob", 
+	"age::3" -> "30",
+	"nickname::5" -> "Jimbo",
+	"password::7" -> "password",
+	"password::6" -> "password"
+//	"terms::8" -> 
+      )
 
 }

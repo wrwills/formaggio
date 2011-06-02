@@ -16,7 +16,7 @@ to port ideas from Haskell to Scala.  I generally tried to follow the Haskell im
 especially digestive-functors, but it was necessary to diverge a little in order to 
 reuse scalaz' Validators.
 
-Other implementations of the formlets concept include:
+There are implementations of the formlets concept in several other languages including:
 
  * F#: the (commercial) [WebSharper Platform](http://www.intellifactory.com/products/wsp/Home.aspx)
    contains a [formlets library](http://www.intellifactory.com/docs/formlets/index.html)
@@ -32,22 +32,28 @@ This is not meant to be a web framework.  It is concerned solely with form handl
  * sbt update
  * sbt jetty
  * Go to (http://localhost:8080/registration) to see the form in action
- * have a look at core/src/main/scala/scormlets/SampleData.scala to see how that page was constructed
- * Have a play on the command line: 
+ 
+## How it Works ##
+
+The best way to get understanding of how Formaggio works is to have a play on the command line: 
  
      sbt 'project core' console  
-     import scormlets.SampleData._   
-     val env =  
-           Map(  
-    	"name1"-> "Jim",   
-    	"name2" -> "Bob", 
-    	"age3" -> "30",
-    	"nickname5" -> "Jimbo",
-    	"password7" -> "password",
-    	"password6" -> "password"
-          )
-     runFormState(personForm, env)
+     scala> import formaggio.SampleData.{personForm, sampleEnv}
+     import formaggio.SampleData.{personForm, sampleEnv}
+     scala> sampleEnv
+     res0: scala.collection.immutable.Map[java.lang.String,java.lang.String] = Map(age::3 -> 30, name::2 -> Bob, password::7 -> password, name::1 -> Jim, nickname::5 -> Jimbo, password::6 -> password)
+     scala> runFormState(personForm, sampleEnv)
+     res1: (formaggio.Formlets.ValidForm[formaggio.SampleData.Person], scala.xml.NodeSeq) = (Failure(NonEmptyList((terms::8,GenericError(<function1>)))),NodeSeq(<h1>Errors...
+     
+The last result is a form failure because the terms and conditions field is not present in the environmont: ie it hasn't been filled in.  To fill it in we can just add to the sampleEnv map:
+     
+     scala> runFormState(personForm, sampleEnv + ("terms::8" -> "true"))
+     res2: (formaggio.Formlets.ValidForm[formaggio.SampleData.Person], scala.xml.NodeSeq) = (Success(Person(FullName(Jim,Bob),30,false,Some(Jimbo),password,Favourites(GreenEggs,List()))),NodeSeq(, <label for="name:...
 
+This form now succeeds.  As you can see when a form succeeds you get a Success object which contains the datatype
+that the form produces as well as the filled in form html.  If it fails you get a Failure object which contains a list of entries that have failed as well as the form html along with an html representation of the errrors that have been produced.
+
+To see how to actually go about making forms have a look at core/src/main/scala/scormlets/SampleData.scala to see how personForm is constructed.
 
 ## TODO: ##
 
@@ -58,4 +64,9 @@ This is not meant to be a web framework.  It is concerned solely with form handl
  * support for different backends eg scalate, commandline
  * i18n support for error messages, field names, etc 
  
+## THANKS: ##
+
+  * To Runar Bjarnason for the name.
+  
  
+
