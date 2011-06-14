@@ -16,8 +16,9 @@ to port ideas from Haskell to Scala.  I generally tried to follow the Haskell im
 especially digestive-functors, but it was necessary to diverge a little in order to 
 reuse scalaz' Validators.
 
-There are implementations of the formlets concept in several other languages including:
+There are implementations of the formlets concept in several languages including:
 
+ * Haskell: [Formlets](http://hackage.haskell.org/package/formlets), [Digestive-Functors](http://hackage.haskell.org/package/digestive-functors), and [Yesod](http://www.yesodweb.com/)
  * F#: the (commercial) [WebSharper Platform](http://www.intellifactory.com/products/wsp/Home.aspx)
    contains a [formlets library](http://www.intellifactory.com/docs/formlets/index.html)
  * Racket: (http://docs.racket-lang.org/web-server/formlets.html)
