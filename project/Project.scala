@@ -9,7 +9,9 @@ object FormaggioBuild extends Build {
       organization := "com.github.wrwills",
 //      name := "formaggio"      
       version := "0.2.1",
-      scalaVersion := "2.9.0-1"
+      scalaVersion := "2.9.0-1",
+      publishTo := Option(Resolver.file("gitpages-local", Path.userHome / "projects" / "scala" / "formaggio" / "repository"))
+      // publishTo := Option(Resolver.file("gitpages-local", Path.userHome / "git" / "repository"))
       //initialCommands := coreConsole
       //shellPrompt  := {(state: State) => coreConsole}
     )
