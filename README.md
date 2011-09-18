@@ -28,13 +28,13 @@ There are implementations of the formlets concept in several languages including
 
 This is not meant to be a web framework.  It is concerned solely with form handling.  
 
-## Quick Start ##
+## Using in your project
 
- * if you haven't already get sbt 0.10 running on your system (https://github.com/harrah/xsbt/wiki/Setup)
- * enter the sbt console by running 'sbt'
- * in the console type 'project formaggio-scalatra-example' and then 'jetty-run'
- * Go to (http://localhost:8080/registration) to see the form in action
- 
+See (https://github.com/wrwills/formaggio-examples) for an example of using Formaggio in a project.
+
+    "formaggio repo" at "http://wrwills.github.com/formaggio/repository/"
+    "com.github.wrwills" %% "formaggio" % "0.2.2"
+
 ## How it Works ##
 
 The best way to get understanding of how Formaggio works is to have a play on the command line: 
