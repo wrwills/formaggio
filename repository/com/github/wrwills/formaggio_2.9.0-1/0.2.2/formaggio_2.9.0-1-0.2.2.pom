@@ -2,14 +2,20 @@
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.wrwills</groupId>
-    <artifactId>formaggio-core_2.9.0-1</artifactId>
+    <artifactId>formaggio_2.9.0-1</artifactId>
     <packaging>jar</packaging>
-    <version>0.2.1</version>
+    <version>0.2.2</version>
     <dependencies>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>2.9.0-1</version>
+            <scope>compile</scope>
+        </dependency>
         <dependency>
             <groupId>org.scalaz</groupId>
             <artifactId>scalaz-core_2.9.0-1</artifactId>
-            <version>6.0.1</version>
+            <version>6.0.3</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
