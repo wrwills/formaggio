@@ -2,7 +2,7 @@ name := "formaggio"
 
 organization := "com.github.wrwills"
 
-scalaVersion := "2.9.0-1"
+scalaVersion := "2.9.1"
 
 version := "0.2.2"
 
@@ -12,8 +12,10 @@ publishTo := Option(Resolver.file("gitpages-local", Path.userHome / "projects" /
 
 libraryDependencies ++= Seq(
   "org.scalaz" %% "scalaz-core" % "6.0.3",
-  "org.specs2" %% "specs2" % "1.4" % "test"
+  "org.specs2" %% "specs2" % "1.6.1" % "test"
 )
+
+crossScalaVersions := Seq("2.9.1", "2.9.0-1")
 
 initialCommands := """
 import scalaz._
