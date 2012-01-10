@@ -12,7 +12,8 @@ publishTo := Option(Resolver.file("gitpages-local", Path.userHome / "projects" /
 
 libraryDependencies ++= Seq(
   "org.scalaz" %% "scalaz-core" % "6.0.3",
-  "org.specs2" %% "specs2" % "1.6.1" % "test"
+  "org.specs2" %% "specs2" % "1.6.1" % "test",
+  "com.recursivity" %% "recursivity-commons" % "0.5.5"
 )
 
 crossScalaVersions := Seq("2.9.1", "2.9.0-1")

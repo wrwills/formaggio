@@ -73,6 +73,19 @@ trait Html {
            })
 
      
+  def emailInput(str: String) =
+    if (com.recursivity.commons.validator.Email("email", str).isValid)
+      str.success
+    else
+      "Not a valid email address".fail
+
+  def toStringValidation[A](v: Validation[NumberFormatException, A]) =
+	 v match { case Success(a) => a.success; case Failure(e) => "number parse fail".fail }
+
+  def doubleInput(nm: String) = toStringValidation(nm.parseDouble) // requiredInput(nm) map ( x => toStringValidation(x.parseDouble) ) 
+
+  def intInput(s: String) = toStringValidation(s.parseInt)
+
   def inputText(nname: String = "sc_", default: Option[String] = None, inputType: String = "text"): Form[Option[String]] = {
     def inputView(inputType: String) = 
       (name: String, value: String) => 
