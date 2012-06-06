@@ -221,11 +221,12 @@ object FormletsSpecs extends Specification {
     (getFormView(plugged)).toString must_== target.toString
 
   }
-    /*
+    
   "mass input forms should work correctly" in {
     import scala.xml._
 
-    val mI = massInput(inputText())
+    //val mI = massInput(inputText())
+    val mI = massInput(requiredInput())
     (getInput("sc_::101", getFormView(mI)) \ "@name").text must_== "sc_::101"
 
     "when sending multiple values to a mass input" in {
@@ -241,14 +242,19 @@ object FormletsSpecs extends Specification {
 	rslt._1.toOption.get.toList must_== List("foo", "bar")
       }
     }
-
-
-
+    
+    "should show default values" in { 
+      val mI = massInput(requiredInput(), List("foo","bar"))
+      val view = getFormView(mI)
+      println(view)
+      true must_== true
+    }
+      
     "mass input should apppend to the rest of the form correctly" in {
       case class Thingy(thing1: String, things: Seq[FullName], thing2: String) 
       implicit def ThingyEqual: Equal[Thingy] = equalA
 
-      val frm = (inputText() |@| massInput(fullNameForm) |@| inputText() <++ ferrors){ Thingy(_,_,_) }
+      val frm = (requiredInput() |@| massInput(fullNameForm) |@| requiredInput() <++ ferrors){ Thingy(_,_,_) }
 
       val rslt = 
 	getFormValidation(
@@ -266,7 +272,7 @@ object FormletsSpecs extends Specification {
 	FullName("Foo", "Bar"), 
 	FullName("Jim", "Bob")
       ).sequence[({type λ[α]=Validation[String, α]})#λ, FullName]).toOption.get.toList.toString must_== rslt.toOption.get.things.toList.toString
-      
+      /*
       "errors should work correctly with mass input" in {
 	"errors from the mass input should be accumulated in the rest of the form if not shown in mass input" in {
 	  val rslt = runFormState(frm, Map("sc_::1" -> "", "name::201" -> "Foo", "name::202" -> "bar", "sc_::3" -> "another"))
@@ -275,11 +281,11 @@ object FormletsSpecs extends Specification {
 	  getErrorMessageForField("name::202", view) must beSome("Name must start with a capital letter")
 	  getErrorMessageForField("sc_::1", view) must beSome("empty string not allowed for sc_::1")
 	}
-      }
+      }*/
       
     }
-
-  }*/
+    
+  }
   
 
 }

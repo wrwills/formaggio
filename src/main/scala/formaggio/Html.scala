@@ -30,6 +30,17 @@ trait Html {
    * A corollary of this is that default values cannot have any effect on this sort of input
    * http://www.w3.org/TR/html401/interact/forms.html#successful-controls
    */
+  def nonFailingInput(
+    name: String, 
+    view: (String,String) => View 
+    //stringRepresentation: String => String = (_: String).toString
+  ): Form[Option[String]] = 
+    optionalInput(
+      name, None, view, x => x.toString, 
+      (env,lookupName) => 
+	emptyStringOptional(env.get(lookupName).getOrElse("")).success[NonEmptyList[(String,FormError)]])
+
+  /*
   def nonFailingInput[A](
     name: String, view: (String,String) => View, 
     stringRepresentation: A => String = (_: A).toString
@@ -38,24 +49,12 @@ trait Html {
       name, None, view, stringRepresentation, 
       (env,lookupName) => 
 	emptyStringOptional(env.get(lookupName).getOrElse("")).success[NonEmptyList[(String,FormError)]])
+        */
+
 
   /*
-   * base method for adding an input
-   * Takes care of incrementing the form state and generating a
-   * name for the input.
-   *
-   * most formlets will use this the default lookupValidation
-   * If the input is not in the environment map, then we get a LookupError
-   * If the input is in the environment but it is an empty string then running the form returns None
-   * If the form returns Some[String] then that string is guaranteed to be nonempty
-   */
-  def optionalInput[A](
-    name: String, default: Option[A], view: (String,String) => View, 
-    stringRepresentation: A => String = (_: A).toString, 
-    lookupValidation: (Env, String) => Validation[NonEmptyList[(String, FormError)],Option[String]] = 
-      (env,lookupName) => env.get(lookupName).toSuccess[(String,FormError)]((lookupName,LookupError)).map(emptyStringOptional).liftFailNel
-  ): Form[Option[String]] =
     Form(
+      dflt,
       (env: Env) =>  
         for {s <- init[FormState] 
              val newInt = s._1 + 1
@@ -70,7 +69,73 @@ trait Html {
              (lookup,
               view(lookupName, 
                    lookup | dflt getOrElse("") ) ) 
+           }) */
+  /*
+  def optionalInput[A](
+    name: String, default: Option[A], view: (String,A) => View, 
+    stringRepresentation: A => String = (_: A).toString, 
+    lookupValidation: (Env, String) => Validation[NonEmptyList[(String, FormError)],Option[A]] = 
+      (env,lookupName) => env.get(lookupName).toSuccess[(String,FormError)]((lookupName,LookupError)).map(emptyStringOptional).liftFailNel
+  ): Form[Option[A]] =
+    Form(
+      default,
+      (env: Env) =>  
+        for {s <- init[FormState] 
+             val newInt = s._1 + 1
+             val lookupName = name + "::" + (s._1 + 1)
+             ns <- modify((x: FormState) => (x._1 + 1, lookupName :: x._2))
+           } yield {
+             val dflt = default map (stringRepresentation(_))
+	     val lookup = lookupValidation(env, lookupName)
+             (lookup,
+              view(lookupName, 
+                   lookup | dflt getOrElse("") ) ) 
            })
+           */
+
+  /*
+   * base method for adding an input
+   * Takes care of incrementing the form state and generating a
+   * name for the input.
+   *
+   * most formlets will use this the default lookupValidation
+   * If the input is not in the environment map, then we get a LookupError
+   * If the input is in the environment but it is an empty string then running the form returns None
+   * If the form returns Some[String] then that string is guaranteed to be nonempty
+   *
+   * Right now just done for strings: TODO parametrize
+   */
+  def optionalInput(
+    name: String, 
+    dfalt: Option[String], 
+    view: (String,String) => View, 
+    stringRepresentation: String => String = (_: String).toString, 
+    lookupValidation: (Env, String) => Validation[NonEmptyList[(String, FormError)],Option[String]] = 
+      (env,(lookupName: String)) => env.get(lookupName).toSuccess[(String,FormError)]((lookupName,LookupError)).map(emptyStringOptional).liftFailNel
+    ): Form[Option[String]] = new Form[Option[String]]{ 
+      val default = if (dfalt.isEmpty) None else Some(dfalt)
+      val value = 
+        (deflt: Option[Option[String]]) =>
+        (env: Env) =>  
+        for {s <- init[FormState] 
+             val newInt = s._1 + 1
+             val lookupName = name + "::" + (s._1 + 1)
+             ns <- modify((x: FormState) => (x._1 + 1, lookupName :: x._2))
+           } yield {
+             val dflt = deflt.flatten.headOption map (stringRepresentation(_))
+             //val lookupValidation: Validation[NonEmptyList[(String, FormError)],Option[String]] = 
+//               env.get(lookupName).toSuccess[(String,FormError)]((lookupName,LookupError)).map(emptyStringOptional).liftFailNel
+//               env.get(lookupName).toSuccess[(String,FormError)]((lookupName,LookupError)).map(emptyStringOptional).map( _ orElse dflt).liftFailNel
+	     val lookup = lookupValidation(env, lookupName)
+             println("getting default: " + dflt)
+             val viewVal =
+               lookup.toOption.flatten.headOption.getOrElse( dflt.getOrElse("") )
+             //  lookup.toOption.flatten.headOption.getOrElse( default.flatten.headOption.getOrElse("") )
+             (lookup, view(lookupName, viewVal) )
+                   //lookup.toOption.getOrElse( default.flatten.headOption.getOrElse("") ) ) )
+                   //lookup | default.flatten.headOption.getOrElse("") ) ) 
+           }              
+    }
 
      
   def emailInput(str: String) =
@@ -253,6 +318,7 @@ trait Html {
    */
   def htmlE(view: FormState => View): Form[Unit] = 
     Form(
+      (_: Option[Unit]) =>
       (env: Env) =>  
 	for {s <- init[FormState]} yield (success(()), view(s)) 
     )
@@ -287,6 +353,7 @@ trait Html {
    */    
   def ferrors: Form[Unit] =
     Form(
+      (dflt: Option[Unit]) =>
       (env: Env) =>  
 	for {s <- init[FormState]
 	     _ <- modify((x: (FormState)) => (x._1, List[String]()))
